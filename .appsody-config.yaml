@@ -1,0 +1,3 @@
+id: "20200701183408.79527100"
+project-name: reefer-monitoring-agent
+stack: dev.local/appsody/ibm-gse-eda-quarkus:0.4.1

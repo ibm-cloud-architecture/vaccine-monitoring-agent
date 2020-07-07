@@ -3,10 +3,16 @@ kind: AppsodyApplication
 metadata:
   annotations:
     cekit.io/version: 3.6.0
+    commit.image.appsody.dev/date: Mon Jul 6 18:44:28 2020 -0700
+    commit.image.appsody.dev/message: first drop
     graalvm-archive-filename: graalvm-ce-linux-amd64-19.3.1-java8.tar.gz
     graalvm-archive-url: https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-19.3.1/graalvm-ce-java8-linux-amd64-19.3.1.tar.gz
     graalvm-version: java8-19.3.1
-    image.opencontainers.org/created: "2020-07-06T18:29:55-07:00"
+    image.opencontainers.org/created: "2020-07-06T22:07:02-07:00"
+    image.opencontainers.org/documentation: https://github.ibm.com/vaccine-cold-chain/reefer-monitoring-agent
+    image.opencontainers.org/revision: cc006c98fdef252ed132823c08eece3f4193abe1-modified
+    image.opencontainers.org/source: https://github.ibm.com/vaccine-cold-chain/reefer-monitoring-agent/tree/master
+    image.opencontainers.org/url: https://github.ibm.com/vaccine-cold-chain/reefer-monitoring-agent
     k8s.io/description: Quarkus.io builder image for building Quarkus applications.
     k8s.io/display-name: Centos + GraalVM + Maven Image
     maintainer: Quarkus Team <quarkus-dev@googlegroups.com>
@@ -31,24 +37,24 @@ metadata:
     stack.appsody.dev/id: ibm-gse-eda-quarkus
     stack.appsody.dev/version: 0.4.1
   name: reefer-monitoring-agent
-  namespace: jbsandbox
+  namespace: vaccine-cold-chain
 spec:
-  applicationImage: default-route-openshift-image-registry.gse-eda-demo-202005-fa9ee67c9ab6a7791435450358e564cc-0000.us-south.containers.appdomain.cloud/vaccine-cold-chain/vaccine-cold-monitoring:0.0.1
+  applicationImage: default-route-openshift-image-registry.gse-eda-demo-202005-fa9ee67c9ab6a7791435450358e564cc-0000.us-south.containers.appdomain.cloud/vaccine-cold-chain/reefer-monitoring-agent:0.0.1
   createKnativeService: false
   env:
   - name: KAFKA_BROKERS
     valueFrom:
       configMapKeyRef:
-        key: brokers
-        name: kafka-brokers
+        key: kafka-brokers
+        name: vaccine-cmap
   - name: KAFKA_APIKEY
     valueFrom:
       secretKeyRef:
         key: binding
-        name: es-cp4i-apikey
+        name: es-oncloud-key
         optional: true
   - name: TRUSTSTORE_ENABLED
-    value: "true"
+    value: "false"
   - name: CERT_LOCATION
     value: /deployments/certs/es-cert.jks
   expose: true
@@ -75,12 +81,12 @@ spec:
     type: NodePort
   stack: ibm-gse-eda-quarkus
   version: 1.0.0
-  volumeMounts:
-  - mountPath: /deployments/certs
-    name: es-truststore-jks
-    readOnly: true
-    subPath: es-cert.jks
-  volumes:
-  - name: es-truststore-jks
-    secret:
-      secretName: es-truststore-jks
+#  volumeMounts:
+#  - mountPath: /deployments/certs
+#    name: es-truststore-jks
+#   readOnly: true
+#   subPath: es-cert.jks
+# volumes:
+# - name: es-truststore-jks
+#   secret:
+#     secretName: es-truststore-jks

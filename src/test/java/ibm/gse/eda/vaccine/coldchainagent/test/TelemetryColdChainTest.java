@@ -18,8 +18,8 @@ public class TelemetryColdChainTest {
     public TelemetryAssessor assessor;
     
     /**
-     * When 5 temperature measurement goes over the threshold
-     * then raise a issue
+     * When 5 temperature measurements go over the threshold
+     * then raise an issue
      */
     @Test
     public void shouldAlarmOn5ConcecutiveTemperatureRaise(){

@@ -10,10 +10,14 @@ import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
 import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ScoringResult;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;
 
 /**
  * A bean consuming telemetry events from the "reefer-telemetry" Kafka topic and 
@@ -34,6 +38,10 @@ public class TelemetryAssessor {
     @ConfigProperty(name = "prediction.enabled", defaultValue="false")
     public boolean predictions_enabled;
 
+    @Inject
+    @RestClient
+    ScoringService scoringService;
+    
     public int count;
 
     public TelemetryAssessor(){}
@@ -64,7 +72,10 @@ public class TelemetryAssessor {
     }
 
     public ScoringResult callAnomalyDetection(Telemetry telemetry) {
-        return null;
+        // todo compute last temperature diff
+        ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
+        ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
+        return scoringService.assessTelemetry(wrapper);
 
     }
     

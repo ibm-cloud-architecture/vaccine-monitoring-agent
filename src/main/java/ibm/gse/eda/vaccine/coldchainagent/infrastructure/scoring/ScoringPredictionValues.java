@@ -1,4 +1,4 @@
-package ibm.gse.eda.vaccine.coldchainagent.infrastructure;
+package ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring;
 
 public class ScoringPredictionValues {
 	

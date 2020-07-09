@@ -1,25 +1,7 @@
-package ibm.gse.eda.vaccine.coldchainagent.infrastructure;
+package ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring;
 
 public class ScoringPrediction {
-		// public String[] fields;
-	    // public ScoringPredictionValue[][] values;
 		
-	    // public ScoringPrediction() {}
-	    
-		// public String[] getFields() {
-		// 	return fields;
-		// }
-		// public void setFields(String[] fields) {
-		// 	this.fields = fields;
-		// }
-
-		// public ScoringPredictionValue[][] getValues() {
-		// 	return values;
-		// }
-
-		// public void setValues(ScoringPredictionValue[][] values) {
-		// 	this.values = values;
-		// }
 		public String[] fields;
 	    public Object[][] values;
 		

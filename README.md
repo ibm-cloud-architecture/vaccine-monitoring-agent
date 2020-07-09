@@ -1,19 +1,7 @@
-# Kakfa template for Quarkus
+# Reefer Monitoring Event Driven Service
 
-This template provides a Java application which demonstrates using MicroProfile Reactive Messaging to consume and produce messages on Kafka topics. The application uses the example from the [Quarkus Kafka guide](https://quarkus.io/guides/kafka). 
+The main documentation is part of the Vaccine project and can be [read here](https://pages.github.ibm.com/vaccine-cold-chain/vaccine-cold-chain-main/solution/cold-monitoring/).
 
-A bean produces a random `Integer` onto a Reactive Messaging channel named "generated-price" every 5 seconds. This channel is connected to a Kafka topic named "prices". Another bean consumes from that topic, applies a conversion, and publishes a `double` onto another channel named "my-data-stream". Finally, that channel is streamed to a JAX-RS endpoint `/prices.html`, using [Server-sent Events](https://en.wikipedia.org/wiki/Server-sent_events).
-
-## Getting Started
-
-1. Create a new folder in your local directory and initialize it using the Appsody CLI, e.g.:
-
-```bash
-mkdir my-project
-cd my-project
-appsody init quarkus kafka
-```
-This will initialize a Quarkus project using the `kafka` template.
 
 ## Running locally
 

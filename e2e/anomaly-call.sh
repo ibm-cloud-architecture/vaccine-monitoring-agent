@@ -1,0 +1,1 @@
+curl -X POST -k --header 'Content-Type: application/json' --header 'Accept: application/json' --header "Authorization: Bearer  $WML_TOKEN" -d @scoring-telemetry.json https://zen-cpd-zen.apps.sre-ctp-cluster-01.cp.fyre.ibm.com/v4/deployments/fb74f49e-618e-4cd4-bf6c-06622a8ce3c3/predictions

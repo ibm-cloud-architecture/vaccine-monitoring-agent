@@ -1,0 +1,26 @@
+{
+    "input_data": [
+        {
+            "fields": ["temperature",
+                "target_temperature", 
+                "ambiant_temperature", 
+                "kilowatts", 
+                "time_door_open",
+                "content_type",
+                "defrost_cycle",
+                "oxygen_level", 
+                "nitrogen_level", 
+                "humidity_level",
+                "target_humidity_level",
+                "carbon_dioxide_level", 
+                "fan_1", "fan_2", "fan_3",
+                "maintenance_required",
+                "temp_diff"
+            ],
+            "values": [
+                [2,2,24, 10, 0, 1, 1, 30, 20, 10, 10,10,true,true,true,0,0]
+            ]
+            
+        }
+    ]
+}

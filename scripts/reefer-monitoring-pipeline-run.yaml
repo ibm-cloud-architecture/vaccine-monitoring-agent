@@ -1,0 +1,20 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  name: reefer-monitoring-pipeline-run-task
+  annotations:
+  labels:
+    app: tekton-app
+    tekton.dev/pipeline: appsody-deploy-pipeline
+spec:
+  serviceAccountName: vaccine-solution-sa
+  pipelineRef:
+    name: reefer-monitoring-build-pipeline
+  resources:
+  - name: git-source
+    resourceRef:
+      name: reefer-monitoring-git-source
+  - name: docker-image
+    resourceRef:
+      name: reefer-monitoring-docker-image
+    

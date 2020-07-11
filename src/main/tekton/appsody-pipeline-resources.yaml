@@ -1,0 +1,23 @@
+apiVersion: v1
+items:
+- apiVersion: tekton.dev/v1alpha1
+  kind: PipelineResource
+  metadata:
+    name: reefer-monitoring-docker-image
+  spec:
+    params:
+    - name: url
+      value: docker.io/ibmcase/reefer-monitoring-agent
+    type: image
+- apiVersion: tekton.dev/v1alpha1
+  kind: PipelineResource
+  metadata:
+    name: reefer-monitoring-git-source
+  spec:
+    params:
+    - name: revision
+      value: master
+    - name: url
+      value:  https://github.ibm.com/vaccine-cold-chain/reefer-monitoring-agent.git
+    type: git
+kind: List

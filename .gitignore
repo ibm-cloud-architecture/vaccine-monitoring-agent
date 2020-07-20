@@ -1,3 +1,6 @@
 certs/es-cert.jks
+certs/IBM-Data-and-AI.crt
+certs/es-cert.p12
+certs/server.truststore
 scripts/setenv.sh
 target/

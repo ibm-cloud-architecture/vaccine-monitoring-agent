@@ -4,6 +4,7 @@ import java.util.Random;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.ws.rs.Produces;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
@@ -14,6 +15,21 @@ import org.eclipse.microprofile.reactive.streams.operators.PublisherBuilder;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.KeyValue;
+import org.apache.kafka.streams.StreamsBuilder;
+import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.Grouped;
+import org.apache.kafka.streams.kstream.KGroupedStream;
+import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.Materialized;
+import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier;
+import org.apache.kafka.streams.state.Stores;
+
+import io.quarkus.kafka.client.serialization.JsonbSerde;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ContainerAnomalyEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
@@ -98,7 +114,30 @@ public class TelemetryAssessor {
     }
 
     public boolean violateTemperatureThresholdOverTime(TelemetryEvent telemetryEvent) {
-        return false;
+        return true;
+    }
+
+    @Produces
+    public Topology buildTopology(){
+        StreamsBuilder builder = new StreamsBuilder();
+
+        // 1- steam from kafka
+        JsonbSerde<TelemetryEvent> aggregationSerde = new JsonbSerde<>(TelemetryEvent.class);
+        KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
+                "vaccineTemperatureTable");
+
+        builder.stream("topics", Consumed.with(Serdes.String(), aggregationSerde))
+                                                        .groupBy((k, v) -> v.containerID)
+                                                        .aggregate( 
+                                                            // initialized
+                                                            () -> new ContainerTable(0),
+                                                            // aggregator
+                                                            (k, v, aggValue) ->
+                                                                aggValue.update(v),
+                                                                Materialized.<String, ContainerTable> as(storeSupplier)
+                                                                .withKeySerde(Serdes.String())
+                                                                .withValueSerde(new JsonbSerde<>(ContainerTable.class)) 
+                                                            );
     }
 
     public ScoringResult callAnomalyDetection(Telemetry telemetry) {

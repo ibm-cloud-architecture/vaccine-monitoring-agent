@@ -15,6 +15,13 @@ public class ContainerTable {
         
     }
 
+    public boolean violateTemperatureThresholdOverTime() {
+        if (violatedTemperatureCount >= maxViloationAllowed){
+            return true;
+        }else{
+            return false;
+        }
+    }
     public int getViolatedTemperatureCount() {
         return violatedTemperatureCount;
     }

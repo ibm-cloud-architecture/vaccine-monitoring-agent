@@ -2,16 +2,26 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
-  <parent>
+  <!-- <parent>
     <groupId>dev.appsody</groupId>
     <artifactId>quarkus</artifactId>
     <version>[0.4,0.5)</version>
-  </parent>
+  </parent> -->
 
   <groupId>ibm.eda.gse</groupId>
   <artifactId>eda-coldchain-agent</artifactId>
   <version>1.0.0</version>
-
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>1.6.1.Final</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
@@ -74,6 +84,15 @@
       <version>1.14.3</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+          <groupId>org.apache.kafka</groupId>
+          <artifactId>kafka-streams</artifactId>
+          <version>2.6.0</version>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-kafka-streams</artifactId>
+</dependency>
   </dependencies>
   <build>
     <plugins>

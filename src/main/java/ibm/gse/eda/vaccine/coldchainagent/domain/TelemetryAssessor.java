@@ -137,6 +137,7 @@ public class TelemetryAssessor {
                                                                 .withKeySerde(Serdes.String())
                                                                 .withValueSerde(new JsonbSerde<>(ContainerTable.class)) 
                                                             );
+        return builder.build();
     }
 
     public ScoringResult callAnomalyDetection(Telemetry telemetry) {

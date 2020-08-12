@@ -3,30 +3,30 @@ package ibm.gse.eda.vaccine.coldchainagent.domain;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 
-public class ContainerTable {
+public class ContainerTracker {
     public int maxTemperature;
     public int maxViloationAllowed;
     public int violatedTemperatureCount;
 
-    public ContainerTable(int violatedTemperatureCount) {
-        this.maxViloationAllowed = 10;    
-        this.violatedTemperatureCount = violatedTemperatureCount;
+    public ContainerTracker() {
+        this.maxViloationAllowed = 10;
+        this.violatedTemperatureCount=  0;
         this.maxTemperature = 100;
-        
     }
 
     public boolean violateTemperatureThresholdOverTime() {
-        if (violatedTemperatureCount >= maxViloationAllowed){
+        if (violatedTemperatureCount >= maxViloationAllowed) {
             return true;
-        }else{
+        } else {
             return false;
         }
     }
+
     public int getViolatedTemperatureCount() {
         return violatedTemperatureCount;
     }
 
-    public void setViolatedTemperatureCount(int violatedTemperatureCount) {
+    public void setViolatedTemperatureCount(final int violatedTemperatureCount) {
         this.violatedTemperatureCount = violatedTemperatureCount;
     }
 
@@ -34,19 +34,16 @@ public class ContainerTable {
         return maxViloationAllowed;
     }
 
-    public void setMaxViloationAllowed(int maxViloationAllowed) {
+    public void setMaxViloationAllowed(final int maxViloationAllowed) {
         this.maxViloationAllowed = maxViloationAllowed;
     }
 
-    public ContainerTable update(TelemetryEvent telemetryEvent){
+    public ContainerTracker update(final TelemetryEvent telemetryEvent) {
         if (telemetryEvent.payload.temperature >  this.maxTemperature){
             this.violatedTemperatureCount++;
         }else{
             this.violatedTemperatureCount = 0;
         }
         return this;
-    }
-
-    
-    
+    }   
 }

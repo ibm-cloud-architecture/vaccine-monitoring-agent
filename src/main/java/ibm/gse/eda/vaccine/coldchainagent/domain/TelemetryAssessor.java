@@ -33,6 +33,7 @@ import io.quarkus.kafka.client.serialization.JsonbSerde;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ContainerAnomalyEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryDeserializer;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService;
@@ -57,6 +58,9 @@ public class TelemetryAssessor {
     @ConfigProperty(name = "prediction.enabled", defaultValue = "false")
     public boolean predictions_enabled;
 
+    @ConfigProperty(name="mp.messaging.incoming.reefer-telemetry.topic")
+    public String reeferTelemetry;
+
     @Inject
     @RestClient
     ScoringService scoringService;
@@ -80,8 +84,10 @@ public class TelemetryAssessor {
         TelemetryEvent telemetryEvent = message.getPayload();
         LOG.info("Received message: " + telemetryEvent);
         if (violateTemperatureThresholdOverTime(telemetryEvent)) {
-
+            
         }
+        // query ktable
+
         if (predictions_enabled) {
             ScoringResult scoringResult= callAnomalyDetection(telemetryEvent.payload);
             int prediction = (int)scoringResult.getPredictions()[0].values[0][0];
@@ -120,24 +126,27 @@ public class TelemetryAssessor {
     @Produces
     public Topology buildTopology(){
         StreamsBuilder builder = new StreamsBuilder();
-
         // 1- steam from kafka
         JsonbSerde<TelemetryEvent> aggregationSerde = new JsonbSerde<>(TelemetryEvent.class);
         KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
-                "vaccineTemperatureTable");
-
-        builder.stream("topics", Consumed.with(Serdes.String(), aggregationSerde))
-                                                        .groupBy((k, v) -> v.containerID)
+                "containerTrackerTable");
+        builder.stream(reeferTelemetry, Consumed.with(Serdes.String(), aggregationSerde))
+                                                        // group event with containerId
+                                                        // .groupBy((k, v) -> v.containerID)
+                                                        .map((k , v)-> new KeyValue<String,TelemetryEvent>(v.containerID, v))
+                                                        .groupByKey()
+                                                        // aggrate data for ktable
                                                         .aggregate( 
                                                             // initialized
-                                                            () -> new ContainerTable(0),
+                                                            () -> new ContainerTracker(),
                                                             // aggregator
                                                             (k, v, aggValue) ->
                                                                 aggValue.update(v),
-                                                                Materialized.<String, ContainerTable> as(storeSupplier)
+                                                                Materialized.<String, ContainerTracker> as(storeSupplier)
                                                                 .withKeySerde(Serdes.String())
-                                                                .withValueSerde(new JsonbSerde<>(ContainerTable.class)) 
+                                                                .withValueSerde(new JsonbSerde<>(ContainerTracker.class)) 
                                                             );
+
         return builder.build();
     }
 

@@ -7,7 +7,10 @@
     <artifactId>quarkus</artifactId>
     <version>[0.4,0.5)</version>
   </parent> -->
-
+<properties>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+  </properties>
   <groupId>ibm.eda.gse</groupId>
   <artifactId>eda-coldchain-agent</artifactId>
   <version>1.0.0</version>
@@ -16,7 +19,7 @@
       <dependency>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-bom</artifactId>
-        <version>1.6.1.Final</version>
+        <version>1.7.0.CR2</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -84,11 +87,11 @@
       <version>1.14.3</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!-- <dependency>
           <groupId>org.apache.kafka</groupId>
           <artifactId>kafka-streams</artifactId>
           <version>2.6.0</version>
-    </dependency>
+    </dependency> -->
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-kafka-streams</artifactId>
@@ -99,7 +102,8 @@
       <plugin>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-maven-plugin</artifactId>
-        <version>${quarkus-plugin.version}</version>
+        <version>1.7.0.CR2</version>
+
         <executions>
           <execution>
             <goals>
@@ -110,8 +114,9 @@
       </plugin>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>${surefire-plugin.version}</version>
+        <version>3.0.0-M5</version>
         <configuration>
+         
           <systemProperties>
             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
           </systemProperties>
@@ -132,7 +137,7 @@
           <plugin>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-maven-plugin</artifactId>
-            <version>${quarkus-plugin.version}</version>
+            <version>1.7.0.CR2</version>
             <executions>
               <execution>
                 <goals>
@@ -146,7 +151,7 @@
           </plugin>
           <plugin>
             <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${surefire-plugin.version}</version>
+            <version>3.0.0-M5</version>
             <executions>
               <execution>
                 <goals>

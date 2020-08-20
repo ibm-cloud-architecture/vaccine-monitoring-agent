@@ -1,5 +1,6 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -10,6 +11,7 @@ import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Acknowledgment;
+import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.eclipse.microprofile.reactive.messaging.Outgoing;
@@ -36,6 +38,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.apache.kafka.streams.kstream.Printed;
+import org.apache.kafka.streams.processor.ProcessorContext;
 
 import io.quarkus.kafka.client.serialization.JsonbSerde;
 
@@ -49,6 +52,7 @@ import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetr
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;
 import io.reactivex.Flowable;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
 
 /**
  * A bean consuming telemetry events from the "reefer-telemetry" Kafka topic and
@@ -72,10 +76,11 @@ public class TelemetryAssessor {
     @ConfigProperty(name = "mp.messaging.incoming.reefer-telemetry.topic")
     public String reeferTelemetry;
 
+    @Inject @Channel("telmetry-final") Emitter<KeyValue<String, Telemetry>> telEmitter;
+
     // @Inject
     // @RestClient
     // ScoringService scoringService;
-
     public String tableName = "containerTable";
 
     public int count;
@@ -87,7 +92,7 @@ public class TelemetryAssessor {
     @Outgoing("reefer-telemetry-out")
     public Flowable<TelemetryEvent> generate() {
         System.out.println("Here:");
-        return Flowable.interval(5, TimeUnit.SECONDS)
+        return Flowable.interval(25, TimeUnit.SECONDS)
                 .map(tick -> {
                     double random = new Random().nextDouble();
                     double result = 70 + (random * (130 - 70));
@@ -160,11 +165,14 @@ public class TelemetryAssessor {
         JsonbSerde<ContainerTracker> containerSerde = new JsonbSerde<>(ContainerTracker.class);
         System.out.println("inside producer topology");
         KStream<String, TelemetryEvent> telemetryStream = builder.stream("refarcTopic", Consumed.with(Serdes.String(), telemetrySerde))
-                // .groupBy((k,v) -> KeyValue.pair(v.containerID, v), (Grouped.with(Serdes.String(), telemetrySerde));
                 .map((k, v) -> { 
                     System.out.println(k + " -> " + v);
-                    System.out.println("Temperature: " + v.payload.temperature);
-                    return new KeyValue<String, TelemetryEvent>(v.containerID, v);
+                    if (v.payload != null){
+                        System.out.println("Temperature: " + v.payload.temperature);
+                        return new KeyValue<String, TelemetryEvent>(v.containerID, v);
+                    }else {
+                        return new KeyValue<String, TelemetryEvent>(v.containerID, null);
+                    }
                 });
         KGroupedStream<String, TelemetryEvent> telemetryGroup = telemetryStream.groupByKey(Grouped.with(Serdes.String(), telemetrySerde));
         KTable<String, ContainerTracker> containerTable = telemetryGroup.aggregate(
@@ -174,11 +182,15 @@ public class TelemetryAssessor {
             .withKeySerde(Serdes.String())
             .withValueSerde(containerSerde)     
         );
-        // containerTable.toStream().print(Printed.<String, ContainerTracker>toSysOut());
-        
+        containerTable.toStream().filter((k, v) -> v.isPreviousViolation()).foreach((k, v) -> {
+            if (v.isViolatedWithLastTemp()){
+                System.out.println("violated " + v.toString());
+                System.out.println("Send Notification **************->>> or message to another topic. freshely violated container ");
+                telEmitter.send(new KeyValue<String,Telemetry>(k, new Telemetry()));
+            }
+        });
         return builder.build();
     }
-
     // public ScoringResult callAnomalyDetection(Telemetry telemetry) {
     //     // todo compute last temperature diff
     //     ScoringTelemetry st = ScoringTelemetry.build(telemetry, 0);

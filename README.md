@@ -13,6 +13,10 @@ To run the application using Appsody, use this command, substituting in the name
 
 To shut down Kafka and Zookeeper afterwards, run `docker-compose down`.
 
+now you can goto http://localhost:8080/ktable/{containerId}
+or http://localhost:8080/ktable to view all ktable
+and see what is in ktable
+
 ## Running on Kubernetes
 
 To run on Kubernetes, you will first need to deploy Kafka. The easiest way to do that is to use the [Strimzi operator quickstart](https://strimzi.io/quickstarts/). This will deploy a basic Kafka cluster into a `kafka` namespace on your Kubernetes cluster.

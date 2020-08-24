@@ -1,4 +1,6 @@
-package ibm.gse.eda.vaccine.coldchainagent.domain;
+package ibm.gse.eda.vaccine.coldchainagent.api.dto;
+
+import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
 
 public class Returntype {
     public String key;

@@ -26,6 +26,7 @@ import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
+import org.apache.kafka.streams.kstream.GlobalKTable;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
@@ -64,94 +65,36 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 public class TelemetryAssessor {
     public final static String CONTAINER_TABLE = "containerTableInfo";
     protected static Logger LOG = Logger.getLogger(TelemetryAssessor.class);
+
+    @Inject
     @ConfigProperty(name = "temperature.threshold")
     public double temperatureThreshold;
 
+    @Inject
+    @ConfigProperty(name = "quarkus.kafka-streams.topics", defaultValue = "testTopic")
+    public String streamTopic;
+
+    @Inject
     @ConfigProperty(name = "temperature.max.occurence.count", defaultValue = "3")
     public int maxCount;
 
+    @Inject
     @ConfigProperty(name = "prediction.enabled", defaultValue = "false")
     public boolean predictions_enabled;
 
+    @Inject
     @ConfigProperty(name = "mp.messaging.incoming.reefer-telemetry.topic")
     public String reeferTelemetry;
 
     @Inject @Channel("telmetry-final") Emitter<KeyValue<String, Telemetry>> telEmitter;
 
-    // @Inject
-    // @RestClient
-    // ScoringService scoringService;
     public String tableName = "containerTable";
 
     public int count;
-    private boolean anomalyFound = false;
 
     public TelemetryAssessor() {
+        
     }
-
-    @Outgoing("reefer-telemetry-out")
-    public Flowable<TelemetryEvent> generate() {
-        System.out.println("Here:");
-        return Flowable.interval(25, TimeUnit.SECONDS)
-                .map(tick -> {
-                    double random = new Random().nextDouble();
-                    double result = 70 + (random * (130 - 70));
-                    TelemetryEvent tel = new TelemetryEvent();
-                    tel.containerID= "contId-1234";
-                    tel.payload = new Telemetry();
-                    tel.payload.temperature = result;
-                    System.out.println(tel);
-                    return tel;
-                });
-    }
-
-    /**
-     * 
-     * @param message
-     * @return
-     */
-    // @Incoming("reefer-telemetry")
-    // @Outgoing("reefers")
-    // @Acknowledgment(Acknowledgment.Strategy.MANUAL)
-    // public PublisherBuilder<Message<ReeferEvent>> processTelemetryEvent(Message<TelemetryEvent> message) {
-    //     // Get the message as String
-    //     TelemetryEvent telemetryEvent = message.getPayload();
-    //     LOG.info("Received message: " + telemetryEvent);
-    //     // if (violateTemperatureThresholdOverTime(telemetryEvent)) {
-
-    //     // }
-    //     // query ktable
-
-    //     if (predictions_enabled) {
-    //         ScoringResult scoringResult = callAnomalyDetection(telemetryEvent.payload);
-    //         int prediction = (int) scoringResult.getPredictions()[0].values[0][0];
-    //         LOG.info("This is the prediction: " + prediction);
-    //         LOG.info("with a probability: " + "[" + scoringResult.getPredictions()[0].values[0][1] + ","
-    //                 + scoringResult.getPredictions()[0].values[0][1] + "]");
-    //         // Is there anomaly?
-    //         anomalyFound = (prediction == 0);
-    //     } else {
-    //         // Mockup the prediction
-    //         int number = new Random().nextInt(10);
-    //         if (number > 6)
-    //             anomalyFound = true;
-    //     }
-
-    //     if (!anomalyFound) {
-    //         message.ack(); // All processing of this message is done, ack it now
-    //         return ReactiveStreams.empty();
-    //     } else {
-    //         LOG.info(
-    //                 "A reefer anomaly has been predicted. Therefore, sending a ReeferAnomaly Event to the appropriate topic");
-    //         ReeferEvent cae = new ReeferEvent(telemetryEvent.containerID, telemetryEvent.timestamp,
-    //                 telemetryEvent.payload);
-    //         LOG.info("Reefer Anomaly Event object sent: " + cae.toString());
-
-    //         // This message will be sent on, create a new message which acknowledges the
-    //         // incoming message when it is acked
-    //         return ReactiveStreams.of(Message.of(cae));
-    //     }
-    // }
 
     public boolean violateTemperatureThresholdOverTime(TelemetryEvent telemetryEvent) {
         return true;
@@ -164,7 +107,7 @@ public class TelemetryAssessor {
         JsonbSerde<TelemetryEvent> telemetrySerde = new JsonbSerde<>(TelemetryEvent.class);
         JsonbSerde<ContainerTracker> containerSerde = new JsonbSerde<>(ContainerTracker.class);
         System.out.println("inside producer topology");
-        KStream<String, TelemetryEvent> telemetryStream = builder.stream("refarcTopic", Consumed.with(Serdes.String(), telemetrySerde))
+        KStream<String, TelemetryEvent> telemetryStream = builder.stream(streamTopic, Consumed.with(Serdes.String(), telemetrySerde))
                 .map((k, v) -> { 
                     System.out.println(k + " -> " + v);
                     if (v.payload != null){
@@ -191,18 +134,20 @@ public class TelemetryAssessor {
         });
         return builder.build();
     }
-    // public ScoringResult callAnomalyDetection(Telemetry telemetry) {
-    //     // todo compute last temperature diff
-    //     ScoringTelemetry st = ScoringTelemetry.build(telemetry, 0);
-    //     ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
-    //     return scoringService.assessTelemetry(wrapper);
-    // }
-
+   
     public double getTemperatureThreshold() {
         return temperatureThreshold;
     }
 
     public double getMaxCount() {
         return maxCount;
+    }
+
+    // used for testing 
+    public TelemetryAssessor(double temperatureThreshold, String streamTopic, int maxCount, String tableName) {
+        this.temperatureThreshold = temperatureThreshold;
+        this.streamTopic = streamTopic;
+        this.maxCount = maxCount;
+        this.tableName = tableName;
     }
 }

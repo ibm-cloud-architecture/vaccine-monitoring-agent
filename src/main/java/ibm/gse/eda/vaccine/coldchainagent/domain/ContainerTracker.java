@@ -6,14 +6,15 @@ import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 
 public class ContainerTracker {
     private double maxTemperature;
-    private int maxViloationAllowed;
+    private int maxViolationAllowed;
     private int violatedTemperatureCount;
     private boolean previousViolation;
     private ArrayList<Double> temperatureList;
     private boolean violatedWithLastTemp;
+    private String reeferID;
     
     public ContainerTracker(int maxViloationAllowed, double maxTemperature) {
-        this.maxViloationAllowed = maxViloationAllowed;
+        this.maxViolationAllowed = maxViloationAllowed;
         this.violatedTemperatureCount=  0;
         this.maxTemperature = maxTemperature;
         this.previousViolation = false;
@@ -22,7 +23,7 @@ public class ContainerTracker {
     }
     public ContainerTracker(double maxTemperature, int maxViloationAllowed, int violatedTemperatureCount) {
         this.maxTemperature = maxTemperature;
-        this.maxViloationAllowed = maxViloationAllowed;
+        this.maxViolationAllowed = maxViloationAllowed;
         this.violatedTemperatureCount = violatedTemperatureCount;
         this.previousViolation = false;
         this.temperatureList = new ArrayList<>();
@@ -30,22 +31,25 @@ public class ContainerTracker {
     }
     public ContainerTracker() {
         this.maxTemperature = 90;
-        this.maxViloationAllowed = 5;
+        this.maxViolationAllowed = 5;
         this.violatedTemperatureCount = 0;
         this.previousViolation = false;
         this.temperatureList = new ArrayList<>();
         this.violatedWithLastTemp = false;
     }
 
+    
+
     public boolean violateTemperatureThresholdOverTime() {
-        if (violatedTemperatureCount >= maxViloationAllowed) {
+        if (violatedTemperatureCount >= maxViolationAllowed) {
             return true;
         } else {
             return false;
         }
     }
 
-    public ContainerTracker update(final TelemetryEvent telemetryEvent) {
+    public ContainerTracker update(final String key, final TelemetryEvent telemetryEvent) {
+        this.setReeferID(key);
         // if violation hasn't occured yet
         if (!previousViolation){
             // check temperature
@@ -80,13 +84,6 @@ public class ContainerTracker {
         this.maxTemperature = maxTemperature;
     }
 
-    public int getMaxViloationAllowed() {
-        return maxViloationAllowed;
-    }
-
-    public void setMaxViloationAllowed(int maxViloationAllowed) {
-        this.maxViloationAllowed = maxViloationAllowed;
-    }
 
     public int getViolatedTemperatureCount() {
         return violatedTemperatureCount;
@@ -121,12 +118,28 @@ public class ContainerTracker {
         this.violatedWithLastTemp = violatedWithLastTemp;
     }
 
+    public int getMaxViolationAllowed() {
+        return maxViolationAllowed;
+    }
+
+    public void setMaxViolationAllowed(int maxViolationAllowed) {
+        this.maxViolationAllowed = maxViolationAllowed;
+    }
+
+    public String getReeferID() {
+        return reeferID;
+    }
+
+    public void setReeferID(String reeferID) {
+        this.reeferID = reeferID;
+    }
+
     @Override
     public String toString() {
-        return "ContainerTracker [maxTemperature=" + maxTemperature + ", maxViloationAllowed=" + maxViloationAllowed
-                + ", previousViolation=" + previousViolation + ", temperatureList=" + temperatureList
-                + ", violatedTemperatureCount=" + violatedTemperatureCount + ", violatedWithLastTemp="
-                + violatedWithLastTemp + "]";
+        return "ContainerTracker [ maxTemperature=" + maxTemperature + ", maxViolationAllowed=" + maxViolationAllowed
+                + ", previousViolation=" + previousViolation + ", reeferID=" + reeferID + ", temperatureList="
+                + temperatureList + ", violatedTemperatureCount=" + violatedTemperatureCount + ", violatedWithLastTemp="
+                + violatedWithLastTemp + " ]";
     }
 
     

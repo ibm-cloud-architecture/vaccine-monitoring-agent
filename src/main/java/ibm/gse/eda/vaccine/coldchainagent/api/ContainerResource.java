@@ -19,20 +19,16 @@ import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.state.KeyValueIterator;
 import org.apache.kafka.streams.state.QueryableStoreTypes;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-import org.eclipse.microprofile.openapi.annotations.parameters.RequestBody;
 
 import ibm.gse.eda.vaccine.coldchainagent.api.dto.Returntype;
 import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
-import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
 import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
 
 /**
  * A simple resource retrieving the last n telemetries read from the topic,
  * and the reefer with temperature raise
  */
-@Path("/ktable")
+@Path("/reefer-tracker")
 @Produces(MediaType.APPLICATION_JSON)
 @ApplicationScoped
 public class ContainerResource {
@@ -41,18 +37,16 @@ public class ContainerResource {
     KafkaStreams streams;
 
     @GET
-    @Path("/{id}")
-    public ContainerTracker getContainer(@PathParam("id") final String id) {
+    @Path("/{reeferID}")
+    public ContainerTracker getContainer(@PathParam("reeferID") final String reeferID) {
         final StoreQueryParameters<ReadOnlyKeyValueStore<String,ContainerTracker>> parameters = StoreQueryParameters.fromNameAndType(TelemetryAssessor.CONTAINER_TABLE,QueryableStoreTypes.keyValueStore());
-        return streams.store(parameters).get(id);
+        return streams.store(parameters).get(reeferID);
     }
 
     @GET
     public ArrayList<Returntype> getktable() {
         final StoreQueryParameters<ReadOnlyKeyValueStore<String,ContainerTracker>> parameters = StoreQueryParameters.fromNameAndType(TelemetryAssessor.CONTAINER_TABLE,QueryableStoreTypes.keyValueStore());
         final KeyValueIterator<String, ContainerTracker> val =  streams.store(parameters).all();
-            
-        // ReadOnlyKeyValueStore<String, ContainerTracker> store=  streams.store(TelemetryAssessor.CONTAINER_TABLE, QueryableStoreTypes.keyValueStore());  
         final ArrayList<Returntype> returnList= new ArrayList<Returntype>();
         while (val.hasNext()){
             final KeyValue<String, ContainerTracker> keypair = val.next();
@@ -60,7 +54,6 @@ public class ContainerResource {
         }
         return returnList;
     }
-
 }
 
 

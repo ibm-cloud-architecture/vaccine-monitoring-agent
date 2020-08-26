@@ -2,6 +2,7 @@ package ibm.gse.eda.vaccine.coldchainagent.domain;
 
 import java.sql.Timestamp;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -9,14 +10,12 @@ import javax.enterprise.inject.Produces;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
-import org.apache.kafka.streams.kstream.GlobalKTable;
 import org.apache.kafka.streams.kstream.Grouped;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
@@ -37,6 +36,7 @@ import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetr
 import io.reactivex.Flowable;
 import io.smallrye.reactive.messaging.kafka.KafkaRecord;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
 
 /**
  * A bean consuming telemetry events from the "reefer-telemetry" Kafka topic and
@@ -73,9 +73,9 @@ public class TelemetryAssessor {
 
     public String tableName = "containerTable";
 
-    @Inject
-    @RestClient
-    ScoringService scoringService;
+    // @Inject
+    // @RestClient
+    // ScoringService scoringService;
 
     public int count;
     private boolean anomalyFound = false;
@@ -84,9 +84,26 @@ public class TelemetryAssessor {
         
     }
 
+
     public boolean violateTemperatureThresholdOverTime(TelemetryEvent telemetryEvent) {
         return true;
     }
+
+    @Outgoing("reefer-telemetry-out")
+    public Flowable<TelemetryEvent> generate() {
+        return Flowable.interval(5, TimeUnit.SECONDS)
+                .map(tick -> {
+                    double random = new Random().nextDouble();
+                    double result = 70 + (random * (130 - 70));
+                    TelemetryEvent tel = new TelemetryEvent();
+                    tel.containerID= "contId-1234";
+                    tel.payload = new Telemetry();
+                    tel.payload.temperature = result;
+                    System.out.println(tel);
+                    return tel;
+                });
+    }
+
 
     @Produces
     public Topology buildTopology() {
@@ -107,9 +124,9 @@ public class TelemetryAssessor {
                     }
                 });
         // for each message call anomaly detector
-        telemetryStream.peek(( k,telemetryEvent ) -> {
-            anomalyDetector(k, telemetryEvent);
-        });
+        // telemetryStream.peek(( k,telemetryEvent ) -> {
+        //     anomalyDetector(k, telemetryEvent);
+        // });
 
         // group stream by key and serialized with key as string and value ad TelemetryEvent
         KGroupedStream<String, TelemetryEvent> telemetryGroup = telemetryStream.groupByKey(Grouped.with(Serdes.String(), telemetryEventSerde));
@@ -133,7 +150,7 @@ public class TelemetryAssessor {
         return builder.build();
     }
    
-
+/*
     private void anomalyDetector(String key, TelemetryEvent telemetryEvent){
         if (telemetryEvent != null){
             if (predictions_enabled) {
@@ -164,6 +181,8 @@ public class TelemetryAssessor {
             }
         }
     }
+    */
+
     public double getTemperatureThreshold() {
         return temperatureThreshold;
     }
@@ -180,10 +199,10 @@ public class TelemetryAssessor {
         this.tableName = tableName;
     }
 
-    public ScoringResult callAnomalyDetection(Telemetry telemetry) {
-        // todo compute last temperature diff
-        ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
-        ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
-        return scoringService.assessTelemetry(wrapper);
-    }
+    // public ScoringResult callAnomalyDetection(Telemetry telemetry) {
+    //     // todo compute last temperature diff
+    //     ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
+    //     ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
+    //     return scoringService.assessTelemetry(wrapper);
+    // }
 }

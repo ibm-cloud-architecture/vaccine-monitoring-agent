@@ -90,22 +90,6 @@ public class TelemetryAssessor {
         return true;
     }
 
-    @Outgoing("reefer-telemetry-out")
-    public Flowable<TelemetryEvent> generate() {
-        return Flowable.interval(5, TimeUnit.SECONDS)
-                .map(tick -> {
-                    double random = new Random().nextDouble();
-                    double result = 70 + (random * (130 - 70));
-                    TelemetryEvent tel = new TelemetryEvent();
-                    tel.containerID= "contId-1234";
-                    tel.payload = new Telemetry();
-                    tel.payload.temperature = result;
-                    System.out.println(tel);
-                    return tel;
-                });
-    }
-
-
     @Produces
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();

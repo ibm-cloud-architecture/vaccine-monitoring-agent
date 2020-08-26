@@ -69,7 +69,7 @@ public class ContainerResource {
     @Path("/data/{reeferID}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getWeatherStationData(@PathParam("reeferID") final String reeferID) {
+    public Response getContainerData(@PathParam("reeferID") final String reeferID) {
         GetContainerTrackerDataResult result = interactiveQueries.getContainerTrackerData(reeferID);
 
         if (result.getResult().isPresent()) {
@@ -78,7 +78,7 @@ public class ContainerResource {
             URI otherUri = getOtherUri(result.getHost().get(), result.getPort().getAsInt(), reeferID);
             return Response.seeOther(otherUri).build();
         } else {
-            return Response.status(Status.NOT_FOUND.getStatusCode(), "No data found for weather station " + reeferID).build();
+            return Response.status(Status.NOT_FOUND.getStatusCode(), "No data found for container Id " + reeferID).build();
         }
     }
 

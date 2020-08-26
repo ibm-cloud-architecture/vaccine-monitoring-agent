@@ -54,10 +54,14 @@ public class ContainerTrackerInteractiveQueries {
         } else if (metadata.host().equals(host)) {
             LOG.infov("Found data for key {0} locally", id);
             ContainerTracker result = getContainerTrackerStore().get(id);
-
+            LOG.infov("Container Tracker is : ", id);
             if (result != null) {
+                LOG.infov("returning found");
+                
                 return GetContainerTrackerDataResult.found(result);
             } else {
+                LOG.infov("returning not found");
+                
                 return GetContainerTrackerDataResult.notFound();
             }
         } else {

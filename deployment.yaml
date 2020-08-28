@@ -1,0 +1,73 @@
+# deploy on openshift same namespace should have secret with name `kafka-config` with two key value pair 
+## kafka-bootstrap-server="XXXX"
+## kafka-api-key="XXXXX"
+# you can create this using 
+## 
+# oc create secret generic kafka-config --from-literal kafka-bootstrap-server=XXXXXXXX --from-literal kafka-api-key=XXXXXXXX
+# or 
+# kubectl create secret generic kafka-config --from-literal kafka-bootstrap-server=XXXXXXXX --from-literal kafka-api-key=XXXXXXXX
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vaccine-monitory-agent
+  labels:
+    app: vaccine-monitory-agent
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: vaccine-monitory-agent
+  template:
+    metadata:
+      labels:
+        app: vaccine-monitory-agent
+    spec:
+      containers:
+      - name: vaccine-monitory-agent
+        image: bmainaliibm/vaccine-monitoring:4.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              key: kafka-bootstrap-server
+              name: kafka-config
+        - name: KAFKA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: kafka-api-key
+              name: kafka-config
+              optional: true
+        dnsPolicy: ClusterFirstWithHostNet
+        hostNetwork: true
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: vaccine-monitory-agent-svc
+  labels:
+    run: vaccine-monitory-agent-svc
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: vaccine-monitory-agent
+
+---
+
+apiVersion: v1
+kind: Route
+metadata:
+  name: vaccine-monitory-agent-route
+spec:
+  to:
+    kind: Service
+    name: vaccine-monitory-agent-svc

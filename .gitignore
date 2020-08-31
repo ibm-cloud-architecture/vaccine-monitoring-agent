@@ -4,3 +4,9 @@ certs/es-cert.p12
 certs/server.truststore
 scripts/setenv.sh
 target/
+.classpath
+.classpath
+.classpath
+app-deploy.yaml
+.settings/org.eclipse.core.resources.prefs
+.vscode/settings.json

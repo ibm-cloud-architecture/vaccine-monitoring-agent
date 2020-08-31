@@ -15,7 +15,6 @@ import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ContainerAnomalyEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;

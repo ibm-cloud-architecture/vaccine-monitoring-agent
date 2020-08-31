@@ -1,7 +1,6 @@
 # Reefer Monitoring Event Driven Service
 
-The main documentation is part of the Vaccine project and can be [read here](https://pages.github.ibm.com/vaccine-cold-chain/vaccine-cold-chain-main/solution/cold-monitoring/).
-
+The main documentation is part of the Vaccine project and can be [read here](https://ibm-cloud-architecture.github.ibm.com/vaccine-solution-main/solution/cold-monitoring/).
 
 ## Running locally
 

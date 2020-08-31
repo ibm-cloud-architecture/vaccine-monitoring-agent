@@ -32,3 +32,15 @@ spec:
 To get the `value` you need, you can run `kubectl describe kafka -n kafka` and examine the listener address in the status section.
 
 Once you have updated your `app-deploy.yaml` to inject the environment variable, you can run `appsody deploy` to run your Quarkus application on Kubernetes.
+
+
+# Running locally with multiple instance 
+`$ docker-compose -f docker-compose-code.yaml up --scale vaccinemonotoringagent=5`
+
+now you can access your endpoint using
+
+`http://localhost:4000/reefer-tracker/`
+`http://localhost:4000/reefer-tracker/data/{reeferID}`
+`http://localhost:4000/reefer-tracker/meta-data`
+
+you should get request from one of the docker instance running

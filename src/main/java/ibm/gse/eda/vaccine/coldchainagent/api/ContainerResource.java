@@ -22,6 +22,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
@@ -49,6 +52,7 @@ import ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery.PipelineMetada
 @Produces(MediaType.APPLICATION_JSON)
 @ApplicationScoped
 public class ContainerResource {
+    private final Client client = ClientBuilder.newBuilder().build();
     // @GET
     // @Path("/{reeferID}")
     // public ContainerTracker getContainer(@PathParam("reeferID") final String
@@ -83,33 +87,14 @@ public class ContainerResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response getContainerData(@PathParam("reeferID") final String reeferID) {
         GetContainerTrackerDataResult result = interactiveQueries.getContainerTrackerData(reeferID);
-
         if (result.getResult().isPresent()) {
+            System.out.println("data found " + result.getResult());
             return Response.ok(result.getResult().get()).build();
         } else if (result.getHost().isPresent()) {
-            URI otherUri = getOtherUri(result.getHost().get(), result.getPort().getAsInt(), reeferID);
-            System.out.println(otherUri.toString());
-            // not working
-            // InputStream is = null;
-            // DataInputStream dis;
-            // String s;
-            // try {
-            //     is = otherUri.toURL().openStream();
-            
-            //     dis = new DataInputStream(new BufferedInputStream(is));
-            //     while ((s = dis.readLine()) != null)
-            //     {
-            //         System.out.println(s);
-            //     }
-            // } catch (MalformedURLException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // } catch (IOException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // }
-            return Response.seeOther(otherUri).build();
+            System.out.println("data found remotly " + result.getHost());
+            return fetchReeferData(result.getHost().get(), result.getPort().getAsInt(), reeferID, new GenericType<Response>() {});
         } else {
+
             return Response.status(Status.NOT_FOUND.getStatusCode(), "No data found for container Id " + reeferID).build();
         }
     }
@@ -121,13 +106,26 @@ public class ContainerResource {
         return interactiveQueries.getMetaData();
     }
 
-    private URI getOtherUri(String host, int port, String reeferID) {
-        try {
-            return new URI("http://" + host + ":" + port + "/reefer-tracker/data/" + reeferID);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+    @GET
+    public String status() {
+        return "working";
     }
+
+    private Response fetchReeferData(final String host, final int port, String reeferID, GenericType<Response> responseType) {
+        String url = String.format("http://%s:%d/reefer-tracker/data/%s", host, port, reeferID);
+        System.out.println(url);
+        return client.target(url)
+                .request(MediaType.APPLICATION_JSON_TYPE)
+                .get(responseType);
+    }
+
+    // private URI getOtherUri(String host, int port, String reeferID) {
+    //     try {
+    //         return new URI("http://" + host + ":" + port + "/reefer-tracker/data/" + reeferID);
+    //     } catch (URISyntaxException e) {
+    //         throw new RuntimeException(e);
+    //     }
+    // }
 
 
 }

@@ -1,17 +1,13 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
 import java.sql.Timestamp;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.inject.Inject;
 import javax.enterprise.inject.Produces;
+import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.eclipse.microprofile.reactive.messaging.Channel;
-import org.jboss.logging.Logger;
 import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
@@ -21,32 +17,25 @@ import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KTable;
 import org.apache.kafka.streams.kstream.Materialized;
-import org.apache.kafka.common.utils.Bytes;
 import org.apache.kafka.streams.state.KeyValueStore;
-
-import io.quarkus.kafka.client.serialization.JsonbSerde;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.reactive.messaging.Channel;
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import org.jboss.logging.Logger;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryDeserializer;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;
-import io.reactivex.Flowable;
-import io.smallrye.reactive.messaging.kafka.KafkaRecord;
-import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import io.quarkus.kafka.client.serialization.JsonbSerde;
 
 /**
- * A bean consuming telemetry events from the "reefer-telemetry" Kafka topic and
+ * A bean consuming telemetry events from the "telemetries" Kafka topic and
  * applying following logic: - count if the temperature is above a specific
  * threshold for n events then the cold chain is violated. - call external
  * anomaly detection scoring service
  */
 @ApplicationScoped
 public class TelemetryAssessor {
-    public final static String CONTAINER_TABLE = "containerTableInfo";
+    public final static String REEFER_AGGREGATE_TABLE = "reeferAggregateTable";
     protected static Logger LOG = Logger.getLogger(TelemetryAssessor.class);
 
     @Inject
@@ -55,23 +44,18 @@ public class TelemetryAssessor {
 
     @Inject
     @ConfigProperty(name = "quarkus.kafka-streams.topics", defaultValue = "testTopic")
-    public String streamTopic;
+    public String telemetryTopicName;
 
     @Inject
-    @ConfigProperty(name = "temperature.max.occurence.count", defaultValue = "3")
+    @ConfigProperty(name = "temperature.max.occurence.count", defaultValue = "12")
     public int maxCount;
 
     @Inject
     @ConfigProperty(name = "prediction.enabled", defaultValue = "false")
-    public boolean predictions_enabled;
+    public boolean anomalyDetectionEnabled;
 
-    @Inject
-    @ConfigProperty(name = "mp.messaging.incoming.reefer-telemetry.topic")
-    public String reeferTelemetry;
+    @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
 
-    @Inject @Channel("telmetryreefer") Emitter<KeyValue<String, ReeferEvent>> telEmitter;
-
-    public String tableName = "containerTable";
 
     // @Inject
     // @RestClient
@@ -81,7 +65,6 @@ public class TelemetryAssessor {
     private boolean anomalyFound = false;
 
     public TelemetryAssessor() {
-        
     }
 
 
@@ -89,15 +72,24 @@ public class TelemetryAssessor {
         return true;
     }
 
+    /**
+     * From the telemetries received compute the aggregates and keep those
+     * aggregates in a ktable.
+     * If there are consecutuve temperature violations for more than n measured T
+     * then emit an event on the reefers.
+     * @return kafka stream topology
+     */
     @Produces
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
         
         JsonbSerde<TelemetryEvent> telemetryEventSerde = new JsonbSerde<>(TelemetryEvent.class);
-        JsonbSerde<ContainerTracker> containerSerde = new JsonbSerde<>(ContainerTracker.class);
+        JsonbSerde<ReeferAggregate> reeferAggregateSerde = new JsonbSerde<>(ReeferAggregate.class);
         // from original message create stream with key containerID and value as it is
         // 1- steam from kafka topic streamTopic and deserialize with key as string and value ad TelemetryEvent
-        KStream<String, TelemetryEvent> telemetryStream = builder.stream(streamTopic, Consumed.with(Serdes.String(), telemetryEventSerde))
+        KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName, 
+                    Consumed.with(Serdes.String(), 
+                    telemetryEventSerde))
                 .map((k, v) -> { 
                     System.out.println(k + " -> " + v);
                     if (v.payload != null){
@@ -115,21 +107,19 @@ public class TelemetryAssessor {
         // group stream by key and serialized with key as string and value ad TelemetryEvent
         KGroupedStream<String, TelemetryEvent> telemetryGroup = telemetryStream.groupByKey(Grouped.with(Serdes.String(), telemetryEventSerde));
         // create table with store as containerTable
-        KTable<String, ContainerTracker> containerTable = telemetryGroup.aggregate(
-            () -> new ContainerTracker(maxCount,temperatureThreshold), 
-            (k, v, aggValue) -> aggValue.update(k , v),
-            Materialized.<String, ContainerTracker, KeyValueStore<Bytes, byte[]>>as(CONTAINER_TABLE)
+        KTable<String, ReeferAggregate> reeferAggregateTable = telemetryGroup.aggregate(
+            () -> new ReeferAggregate(maxCount,temperatureThreshold), 
+            (k, newTelemetry, currentAggregate) -> currentAggregate.update(k,newTelemetry.payload.temperature),
+            Materialized.<String, ReeferAggregate, KeyValueStore<Bytes, byte[]>>as(REEFER_AGGREGATE_TABLE)
             .withKeySerde(Serdes.String())
-            .withValueSerde(containerSerde)     
+            .withValueSerde(reeferAggregateSerde)     
         );
         // now this might be duplicate @jerome
-        containerTable.toStream().filter((k, v) -> v.isPreviousViolation()).foreach((k, v) -> {
-            if (v.isViolatedWithLastTemp()){
+        reeferAggregateTable.toStream().filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
                 System.out.println("violated " + v.toString());
                 System.out.println("Send Notification **************->>> or message to another topic. violated container ");
                 Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-                telEmitter.send(new KeyValue<String,ReeferEvent>(k, new ReeferEvent(v.getReeferID(),timestamp.toString(), new Telemetry())));
-            }
+                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),timestamp.toString(), new Telemetry()));
         });
         return builder.build();
     }
@@ -167,20 +157,12 @@ public class TelemetryAssessor {
     }
     */
 
-    public double getTemperatureThreshold() {
-        return temperatureThreshold;
-    }
-
-    public double getMaxCount() {
-        return maxCount;
-    }
 
     // used for testing 
-    public TelemetryAssessor(double temperatureThreshold, String streamTopic, int maxCount, String tableName) {
+    public TelemetryAssessor(double temperatureThreshold, String topicName, int maxCount) {
         this.temperatureThreshold = temperatureThreshold;
-        this.streamTopic = streamTopic;
+        this.telemetryTopicName = topicName;
         this.maxCount = maxCount;
-        this.tableName = tableName;
     }
 
     // public ScoringResult callAnomalyDetection(Telemetry telemetry) {

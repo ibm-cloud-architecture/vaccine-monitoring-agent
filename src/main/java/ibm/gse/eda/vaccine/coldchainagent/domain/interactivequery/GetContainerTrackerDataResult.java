@@ -3,23 +3,23 @@ package ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
+import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
 
 public class GetContainerTrackerDataResult {
 
     private static GetContainerTrackerDataResult NOT_FOUND = new GetContainerTrackerDataResult(null, null, null);
 
-    private final ContainerTracker result;
+    private final ReeferAggregate result;
     private final String host;
     private final Integer port;
 
-    private GetContainerTrackerDataResult(ContainerTracker result, String host, Integer port) {
+    private GetContainerTrackerDataResult(ReeferAggregate result, String host, Integer port) {
         this.result = result;
         this.host = host;
         this.port = port;
     }
 
-    public static GetContainerTrackerDataResult found(ContainerTracker data) {
+    public static GetContainerTrackerDataResult found(ReeferAggregate data) {
         return new GetContainerTrackerDataResult(data, null, null);
     }
 
@@ -31,7 +31,7 @@ public class GetContainerTrackerDataResult {
         return NOT_FOUND;
     }
 
-    public Optional<ContainerTracker> getResult() {
+    public Optional<ReeferAggregate> getResult() {
         return Optional.ofNullable(result);
     }
 

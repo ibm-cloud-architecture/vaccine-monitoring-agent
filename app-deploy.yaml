@@ -37,7 +37,7 @@ metadata:
     stack.appsody.dev/id: ibm-gse-eda-quarkus
     stack.appsody.dev/version: 0.4.1
   name: reefer-monitoring-agent
-  namespace: vaccine-cold-chain
+  namespace: vaccine-solution
 spec:
   applicationImage: default-route-openshift-image-registry.gse-eda-demo-202005-fa9ee67c9ab6a7791435450358e564cc-0000.us-south.containers.appdomain.cloud/vaccine-cold-chain/reefer-monitoring-agent:0.0.1
   createKnativeService: false
@@ -45,18 +45,25 @@ spec:
   - name: KAFKA_BROKERS
     valueFrom:
       configMapKeyRef:
-        key: kafka-brokers
-        name: vaccine-cmap
-  - name: KAFKA_APIKEY
+        key: brokers
+        name: kafka-brokers
+  - name: KAFKA_USER
+    valueFrom:
+      configMapKeyRef:
+        key: user
+        name: kafka-brokers
+  - name: KAFKA_PASSWORD
     valueFrom:
       secretKeyRef:
-        key: binding
-        name: es-oncloud-key
-        optional: true
-  - name: TRUSTSTORE_ENABLED
-    value: "false"
-  - name: CERT_LOCATION
-    value: /deployments/certs/es-cert.jks
+        key: password
+        name: jesus
+  - name: KAFKA_CERT
+    value: /deployments/certs/ca.p12
+  - name: KAFKA_CERT_PWD
+    valueFrom:
+      secretKeyRef:
+        key: ca.password
+        name: minimal-prod-cluster-ca-cert
   expose: true
   livenessProbe:
     failureThreshold: 12
@@ -81,12 +88,3 @@ spec:
     type: NodePort
   stack: ibm-gse-eda-quarkus
   version: 1.0.0
-#  volumeMounts:
-#  - mountPath: /deployments/certs
-#    name: es-truststore-jks
-#   readOnly: true
-#   subPath: es-cert.jks
-# volumes:
-# - name: es-truststore-jks
-#   secret:
-#     secretName: es-truststore-jks

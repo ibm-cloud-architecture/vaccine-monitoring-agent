@@ -2,20 +2,20 @@
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
 
-  <!-- <parent>
+  <parent>
     <groupId>dev.appsody</groupId>
     <artifactId>quarkus</artifactId>
     <version>[0.4,0.5)</version>
-  </parent> -->
+  </parent> 
 <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <quarkus.version>1.7.0.CR2</quarkus.version>
+    <quarkus.version>1.7.1.Final</quarkus.version>
     <mavenSunfire.version>3.0.0-M5</mavenSunfire.version>
     <testcontainer.version>1.14.3</testcontainer.version>
   </properties>
   <groupId>ibm.eda.gse</groupId>
-  <artifactId>eda-coldchain-agent</artifactId>
+  <artifactId>vaccine-monitoring-agent</artifactId>
   <version>1.0.0</version>
   <dependencyManagement>
     <dependencies>

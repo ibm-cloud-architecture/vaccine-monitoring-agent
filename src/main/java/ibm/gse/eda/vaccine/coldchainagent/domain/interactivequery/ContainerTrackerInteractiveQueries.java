@@ -16,7 +16,7 @@ import org.apache.kafka.streams.state.StreamsMetadata;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
-import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
+import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
 import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
 
 @ApplicationScoped
@@ -31,7 +31,7 @@ public class ContainerTrackerInteractiveQueries {
     KafkaStreams streams;
 
     public List<PipelineMetadata> getMetaData() {
-        return streams.allMetadataForStore(TelemetryAssessor.CONTAINER_TABLE)
+        return streams.allMetadataForStore(TelemetryAssessor.REEFER_AGGREGATE_TABLE)
                 .stream()
                 .map(m -> new PipelineMetadata(
                         m.hostInfo().host() + ":" + m.hostInfo().port(),
@@ -44,7 +44,7 @@ public class ContainerTrackerInteractiveQueries {
 
     public GetContainerTrackerDataResult getContainerTrackerData(String id) {
         StreamsMetadata metadata = streams.metadataForKey(
-            TelemetryAssessor.CONTAINER_TABLE,
+            TelemetryAssessor.REEFER_AGGREGATE_TABLE,
                 id,
                 Serdes.String().serializer());
 
@@ -53,7 +53,7 @@ public class ContainerTrackerInteractiveQueries {
             return GetContainerTrackerDataResult.notFound();
         } else if (metadata.host().equals(host)) {
             LOG.infov("Found data for key {0} locally", id);
-            ContainerTracker result = getContainerTrackerStore().get(id);
+            ReeferAggregate result = getContainerTrackerStore().get(id);
             LOG.infov("Container Tracker is : ", id);
             if (result != null) {
                 LOG.infov("returning found");
@@ -70,10 +70,10 @@ public class ContainerTrackerInteractiveQueries {
         }
     }
 
-    private ReadOnlyKeyValueStore<String, ContainerTracker> getContainerTrackerStore() {
+    private ReadOnlyKeyValueStore<String, ReeferAggregate> getContainerTrackerStore() {
         while (true) {
             try {
-                return streams.store(TelemetryAssessor.CONTAINER_TABLE, QueryableStoreTypes.keyValueStore());
+                return streams.store(TelemetryAssessor.REEFER_AGGREGATE_TABLE, QueryableStoreTypes.keyValueStore());
             } catch (InvalidStateStoreException e) {
                 // ignore, store not ready yet
             }

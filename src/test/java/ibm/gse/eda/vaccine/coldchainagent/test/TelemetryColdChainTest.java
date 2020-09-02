@@ -15,7 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
-import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
+import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
 import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
 import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
@@ -40,14 +40,13 @@ public class TelemetryColdChainTest {
     private TestInputTopic<String, TelemetryEvent> inputTopic;
 
     private Serde<String> stringSerde = Serdes.String();
-    private double temperatureThreshold = 100.0;
-    private String streamTopic = "stream-refer-topic";
+    private double temperatureThreshold = 0.0;
+    private String telemetryTopic = "telemetries";
     private int maxCount = 5;
-    private String tableName = TelemetryAssessor.CONTAINER_TABLE;
-
+   
     
     private JsonbSerde<TelemetryEvent> telemetrySerde = new JsonbSerde<>(TelemetryEvent.class);
-    private JsonbSerde<ContainerTracker> containerSerde = new JsonbSerde<>(ContainerTracker.class);
+    private JsonbSerde<ReeferAggregate> containerSerde = new JsonbSerde<>(ReeferAggregate.class);
     
     private  Properties getStreamsConfig() {
         final Properties props = new Properties();
@@ -63,10 +62,10 @@ public class TelemetryColdChainTest {
     @BeforeEach
     public void setup() {
         // as no CDI is used set the topic names
-        TelemetryAssessor telemetryAssessor = new TelemetryAssessor(temperatureThreshold, streamTopic, maxCount, tableName);
+        TelemetryAssessor telemetryAssessor = new TelemetryAssessor(temperatureThreshold, telemetryTopic, maxCount);
         Topology topology = telemetryAssessor.buildTopology();
         testDriver = new TopologyTestDriver(topology, getStreamsConfig());
-        inputTopic = testDriver.createInputTopic(streamTopic, 
+        inputTopic = testDriver.createInputTopic(telemetryTopic, 
                                 stringSerde.serializer(),
                                 telemetrySerde.serializer());
         
@@ -81,9 +80,9 @@ public class TelemetryColdChainTest {
         } 
     }
 
-    private TelemetryEvent generateTelemetryEvent(double temperature) {
+    private TelemetryEvent generateTelemetryEventForKey(String key,double temperature) {
         TelemetryEvent tel = new TelemetryEvent();
-        tel.containerID= "contId-1234";
+        tel.containerID= key;
         tel.payload = new Telemetry();
         tel.payload.temperature = temperature;
         return tel;
@@ -91,90 +90,84 @@ public class TelemetryColdChainTest {
 
     @Test
     @Order(1)
-    public void violatedTemepratureCountTest(){
-        ReadOnlyKeyValueStore<String,ContainerTracker> storage = testDriver.getKeyValueStore(TelemetryAssessor.CONTAINER_TABLE);
-
-        TelemetryEvent telemetryEvent = generateTelemetryEvent(this.temperatureThreshold+ 1.0);
+    public void shouldHaveTemperaturesGrowButGoDownAgain(){
+        ReadOnlyKeyValueStore<String,ReeferAggregate> storage = testDriver.getKeyValueStore(TelemetryAssessor.REEFER_AGGREGATE_TABLE);
+        String reeferID = "contId-1234";
+        TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,this.temperatureThreshold+ 1.0);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
-        ContainerTracker containerTracker = storage.get("contId-1234");
+        ReeferAggregate reeferAggregate = storage.get(reeferID);
          // validation
-        Assertions.assertEquals(1, containerTracker.getViolatedTemperatureCount());
-        Assertions.assertEquals(1, containerTracker.getTemperatureList().size());
+        Assertions.assertEquals(1, reeferAggregate.getViolatedTemperatureCount());
+        Assertions.assertEquals(1, reeferAggregate.getTemperatureList().size());
 
         // sending another event with temperature greater than max temperature
-        telemetryEvent = generateTelemetryEvent(this.temperatureThreshold+ 50);
+        telemetryEvent = generateTelemetryEventForKey(reeferID,this.temperatureThreshold+ 5);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
-        containerTracker = storage.get("contId-1234");
+        reeferAggregate = storage.get(reeferID);
         // validation
-        Assertions.assertEquals(2, containerTracker.getViolatedTemperatureCount());
-        Assertions.assertEquals(2, containerTracker.getTemperatureList().size());
+        Assertions.assertEquals(2, reeferAggregate.getViolatedTemperatureCount());
+        Assertions.assertEquals(2, reeferAggregate.getTemperatureList().size());
 
         // generate event with temperature lesser than max temperature
-        telemetryEvent = generateTelemetryEvent(temperatureThreshold-1.0);
+        telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold-1.0);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
-        containerTracker = storage.get("contId-1234");
+        reeferAggregate = storage.get(reeferID);
         // validation
-        Assertions.assertEquals(0, containerTracker.getViolatedTemperatureCount());
-        Assertions.assertEquals(0, containerTracker.getTemperatureList().size());
+        Assertions.assertEquals(0, reeferAggregate.getViolatedTemperatureCount());
+        Assertions.assertEquals(0, reeferAggregate.getTemperatureList().size());
 
         // sending another event with temperature greater than max temperature
-        telemetryEvent = generateTelemetryEvent(temperatureThreshold+1.0);
+        telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold+1.0);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
-        containerTracker = storage.get("contId-1234");
+        reeferAggregate = storage.get(reeferID);
         // validation
-        Assertions.assertEquals(1, containerTracker.getViolatedTemperatureCount());
-        Assertions.assertEquals(1, containerTracker.getTemperatureList().size());
+        Assertions.assertEquals(1, reeferAggregate.getViolatedTemperatureCount());
+        Assertions.assertEquals(1, reeferAggregate.getTemperatureList().size());
     }
 
 
     @Test
     @Order(2)
-    public void violatedContainerTest() {
-        ReadOnlyKeyValueStore<String,ContainerTracker> storage = testDriver.getKeyValueStore(TelemetryAssessor.CONTAINER_TABLE);
+    public void shouldHaveTooManyViolations() {
+        ReadOnlyKeyValueStore<String,ReeferAggregate> storage = testDriver.getKeyValueStore(TelemetryAssessor.REEFER_AGGREGATE_TABLE);
+        String reeferID = "contId-1234";
         // send max maxCount event with temperature greater than maxtemperatureThreshold
-        ArrayList<Double> tempList = new ArrayList<>();
-        ContainerTracker containerTracker;
+        ReeferAggregate reeferAggregate;
         for (int i=1; i < this.maxCount + 1; i++){
             double temp = this.temperatureThreshold + i;
-            tempList.add(temp);
-            TelemetryEvent telemetryEvent = generateTelemetryEvent(temp);
+            TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,temp);
             // send message to topic
             inputTopic.pipeInput(telemetryEvent);
             // get data from ktable
-            containerTracker = storage.get("contId-1234");
+            reeferAggregate = storage.get(reeferID);
             // validation
-            Assertions.assertEquals(i, containerTracker.getViolatedTemperatureCount());
-            Assertions.assertEquals(i, containerTracker.getTemperatureList().size());
-            Assertions.assertArrayEquals(tempList.toArray(), containerTracker.getTemperatureList().toArray());
+            Assertions.assertEquals(i, reeferAggregate.getViolatedTemperatureCount());
         }
         // violation should occur with last temperature
-        containerTracker = storage.get("contId-1234");
-        Assertions.assertEquals(true, containerTracker.isViolatedWithLastTemp());
-        Assertions.assertEquals(true, containerTracker.isPreviousViolation());
+        reeferAggregate = storage.get(reeferID);
+        Assertions.assertEquals(true, reeferAggregate.hasTooManyViolations());
         
         // should change isviolatedwithlastTemp to false
-        TelemetryEvent telemetryEvent = generateTelemetryEvent(temperatureThreshold + 1);
+        TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold + 1);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
-        containerTracker = storage.get("contId-1234");
-        Assertions.assertEquals(false, containerTracker.isViolatedWithLastTemp());
-        Assertions.assertEquals(true, containerTracker.isPreviousViolation());
+        reeferAggregate = storage.get(reeferID);
+        Assertions.assertEquals(true, reeferAggregate.hasTooManyViolations());
         
         // should not change violation information by sending temperature less than threshold
-        telemetryEvent = generateTelemetryEvent(temperatureThreshold - 10);
+        telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold - 10);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
-        containerTracker = storage.get("contId-1234");
-        Assertions.assertEquals(false, containerTracker.isViolatedWithLastTemp());
-        Assertions.assertEquals(true, containerTracker.isPreviousViolation());
+        reeferAggregate = storage.get(reeferID);
+        Assertions.assertEquals(true, reeferAggregate.hasTooManyViolations());
 
     }
 

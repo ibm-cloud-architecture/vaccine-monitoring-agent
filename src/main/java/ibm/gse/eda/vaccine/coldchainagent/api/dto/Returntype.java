@@ -1,12 +1,14 @@
 package ibm.gse.eda.vaccine.coldchainagent.api.dto;
 
-import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
+import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection
 public class Returntype {
     public String key;
-    public ContainerTracker container;
+    public ReeferAggregate container;
 
-	public Returntype(String key, ContainerTracker container) {
+	public Returntype(String key, ReeferAggregate container) {
 		this.key = key;
 		this.container = container;
     }
@@ -19,11 +21,11 @@ public class Returntype {
         this.key = key;
     }
 
-    public ContainerTracker getContainer() {
+    public ReeferAggregate getContainer() {
         return container;
     }
 
-    public void setContainer(ContainerTracker container) {
+    public void setContainer(ReeferAggregate container) {
         this.container = container;
     }
 

@@ -3,6 +3,8 @@ certs/IBM-Data-and-AI.crt
 certs/es-cert.p12
 certs/server.truststore
 scripts/setenv.sh
+scripts/appsody.env
+src/main/kubernetes/configmap.yaml
 target/
 .classpath
 .classpath

@@ -1,6 +1,8 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 
+@RegisterForReflection
 public class Telemetry {
     public String container_id;
     public String measurement_time;

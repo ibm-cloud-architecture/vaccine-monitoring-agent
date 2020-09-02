@@ -1,24 +1,11 @@
 package ibm.gse.eda.vaccine.coldchainagent.api;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Qualifier;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -28,18 +15,7 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Response.StatusType;
 
-import org.apache.kafka.streams.KafkaStreams;
-import org.apache.kafka.streams.KeyValue;
-import org.apache.kafka.streams.StoreQueryParameters;
-import org.apache.kafka.streams.state.KeyValueIterator;
-import org.apache.kafka.streams.state.QueryableStoreTypes;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
-
-import ibm.gse.eda.vaccine.coldchainagent.api.dto.Returntype;
-import ibm.gse.eda.vaccine.coldchainagent.domain.ContainerTracker;
-import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
 import ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery.ContainerTrackerInteractiveQueries;
 import ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery.GetContainerTrackerDataResult;
 import ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery.PipelineMetadata;

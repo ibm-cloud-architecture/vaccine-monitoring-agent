@@ -1,6 +1,7 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -23,6 +24,7 @@ import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAggregateSerde;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import io.quarkus.kafka.client.serialization.JsonbSerde;
@@ -54,7 +56,7 @@ public class TelemetryAssessor {
     @ConfigProperty(name = "prediction.enabled", defaultValue = "false")
     public boolean anomalyDetectionEnabled;
 
-    @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
+    public @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
 
 
     // @Inject
@@ -68,14 +70,14 @@ public class TelemetryAssessor {
     }
 
 
-    public boolean violateTemperatureThresholdOverTime(TelemetryEvent telemetryEvent) {
+    public boolean violateTemperatureThresholdOverTime(ReeferAggregate telemetryEvent) {
         return true;
     }
 
     /**
-     * From the telemetries received compute the aggregates and keep those
+     * From the telemetries received, compute the aggregates and keep those
      * aggregates in a ktable.
-     * If there are consecutuve temperature violations for more than n measured T
+     * If there are consecutive temperature violations for more than n measured T
      * then emit an event on the reefers.
      * @return kafka stream topology
      */
@@ -84,18 +86,17 @@ public class TelemetryAssessor {
         StreamsBuilder builder = new StreamsBuilder();
         
         JsonbSerde<TelemetryEvent> telemetryEventSerde = new JsonbSerde<>(TelemetryEvent.class);
-        JsonbSerde<ReeferAggregate> reeferAggregateSerde = new JsonbSerde<>(ReeferAggregate.class);
+        ReeferAggregateSerde reeferAggregateSerde = new ReeferAggregateSerde();
         // from original message create stream with key containerID and value as it is
         // 1- steam from kafka topic streamTopic and deserialize with key as string and value ad TelemetryEvent
         KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName, 
                     Consumed.with(Serdes.String(), 
                     telemetryEventSerde))
                 .map((k, v) -> { 
-                    System.out.println(k + " -> " + v);
+                    LOG.debug(k + " -> " + v);
                     if (v.payload != null){
-                        System.out.println("Temperature: " + v.payload.temperature);
                         return new KeyValue<String, TelemetryEvent>(v.containerID, v);
-                    }else {
+                    } else {
                         return new KeyValue<String, TelemetryEvent>(v.containerID, null);
                     }
                 });
@@ -114,12 +115,11 @@ public class TelemetryAssessor {
             .withKeySerde(Serdes.String())
             .withValueSerde(reeferAggregateSerde)     
         );
-        // now this might be duplicate @jerome
+        // send reefer info that has cold chain violated
         reeferAggregateTable.toStream().filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
                 System.out.println("violated " + v.toString());
-                System.out.println("Send Notification **************->>> or message to another topic. violated container ");
-                Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),timestamp.toString(), new Telemetry()));
+                System.out.println("Send Notification **************->>> or message to reefer topic. ");
+                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDate.now(),v));
         });
         return builder.build();
     }

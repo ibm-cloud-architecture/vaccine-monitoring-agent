@@ -7,39 +7,34 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 /**
  * Bean to keep aggregates on the reefer's telemetries, like max temperature and
  * the number of consecutive time temperature measurements are violated
+ * 
+ * This class needs to be serializable as json so arguments are set public
  */
 @RegisterForReflection
 public class ReeferAggregate {
 
-    private int maxRecordToKeep = 25;
+    public int maxRecordToKeep = 25;
     // max temperature allowed to be still in the cold chain
-    private double maxTemperature;
-    private double maxTemperatureRegistered;
+    public double maxTemperature = 0;
+    public double maxTemperatureRegistered = -20;
     // number of time we accept temperature violation. This is linked to the
     // measurement snapshot
-    private int maxViolationAllowed;
-    private int violatedTemperatureCount;
-    private boolean tooManyViolations; // help to verify if previous T was above threshold
-    private LinkedList<Double> temperatureList;
-    private String reeferID;
+    public int maxViolationAllowed = 4;
+    public int violatedTemperatureCount = 0;
+    public boolean tooManyViolations = false; // help to verify if previous T was above threshold
+    public LinkedList<Double> temperatureList = new LinkedList<Double>();;
+    public String reeferID;
+    public boolean alreadyReportedColdChainViolation = false;
 
     public ReeferAggregate(int maxViolationAllowed, double maxTemperature) {
         this.maxViolationAllowed = maxViolationAllowed;
         this.maxTemperature = maxTemperature;
-        init();
     }
 
     public ReeferAggregate(int maxViolationAllowed, int maxRecordToKeep, double maxTemperature) {
         this.maxViolationAllowed = maxViolationAllowed;
         this.maxTemperature = maxTemperature;
         this.maxRecordToKeep = maxRecordToKeep;
-        init();
-    }
-
-    private void init() {
-        this.tooManyViolations = false;
-        this.temperatureList = new LinkedList<Double>();
-        this.violatedTemperatureCount = 0;
     }
 
     public ReeferAggregate(String id, double maxTemperature, int maxViolationAllowed, int violatedTemperatureCount) {
@@ -50,10 +45,6 @@ public class ReeferAggregate {
     }
 
     public ReeferAggregate() {
-        this.reeferID = "TEST_ID";
-        this.maxTemperature = -50;
-        this.maxViolationAllowed = 5;
-        init();
     }
 
   
@@ -86,7 +77,7 @@ public class ReeferAggregate {
             this.violatedTemperatureCount = 0;
         }
         if (temperature > maxTemperatureRegistered) {
-            maxTemperatureRegistered = temperature;
+            this.maxTemperatureRegistered = temperature;
         }
         return this;
     }
@@ -148,6 +139,11 @@ public class ReeferAggregate {
 
     public boolean hasTooManyViolations() {
         return this.tooManyViolations;
+    }
+
+
+    public boolean alreadyReportedColdChainViolation(){
+        return this.alreadyReportedColdChainViolation;
     }
 
 	public double maxTemperatureRegistered() {

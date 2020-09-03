@@ -3,36 +3,31 @@ package ibm.gse.eda.vaccine.coldchainagent.test;
 
 
 
-import java.util.ArrayList;
 import java.util.Properties;
 
-import javax.inject.Inject;
-import javax.validation.constraints.AssertTrue;
-
+import org.apache.kafka.common.serialization.Serde;
+import org.apache.kafka.common.serialization.Serdes;
+import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.TestInputTopic;
+import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.TopologyTestDriver;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
 import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
 import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import io.quarkus.kafka.client.serialization.JsonbSerde;
-import io.quarkus.test.junit.QuarkusTest;
-
-import org.apache.kafka.common.serialization.Serde;
-import org.apache.kafka.common.serialization.Serdes;
-import org.apache.kafka.streams.StreamsConfig;
-import org.apache.kafka.streams.TestInputTopic;
-import org.apache.kafka.streams.TestOutputTopic;
-import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.TopologyTestDriver;
-import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
 
 
-@QuarkusTest
+//@QuarkusTest
+// @QuarkusTestResource(KafkaResource.class)
 public class TelemetryColdChainTest {
 
     private static TopologyTestDriver testDriver;
@@ -44,18 +39,17 @@ public class TelemetryColdChainTest {
     private String telemetryTopic = "telemetries";
     private int maxCount = 5;
    
-    
     private JsonbSerde<TelemetryEvent> telemetrySerde = new JsonbSerde<>(TelemetryEvent.class);
-    private JsonbSerde<ReeferAggregate> containerSerde = new JsonbSerde<>(ReeferAggregate.class);
     
     private  Properties getStreamsConfig() {
         final Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "telemetry-tester");
-        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "dummmy:1234");
+        props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        props.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG,  Serdes.String().getClass().getName());
         return props;
     }
 
-
+  
     /**
      * process item sale events, and aggregate per key
      */
@@ -63,6 +57,8 @@ public class TelemetryColdChainTest {
     public void setup() {
         // as no CDI is used set the topic names
         TelemetryAssessor telemetryAssessor = new TelemetryAssessor(temperatureThreshold, telemetryTopic, maxCount);
+        telemetryAssessor.telemetryTopicName = telemetryTopic;
+        telemetryAssessor.reeferEventEmitter = Mockito.mock(MockableEmitter.class);
         Topology topology = telemetryAssessor.buildTopology();
         testDriver = new TopologyTestDriver(topology, getStreamsConfig());
         inputTopic = testDriver.createInputTopic(telemetryTopic, 
@@ -120,7 +116,7 @@ public class TelemetryColdChainTest {
         reeferAggregate = storage.get(reeferID);
         // validation
         Assertions.assertEquals(0, reeferAggregate.getViolatedTemperatureCount());
-        Assertions.assertEquals(0, reeferAggregate.getTemperatureList().size());
+        Assertions.assertEquals(3, reeferAggregate.getTemperatureList().size());
 
         // sending another event with temperature greater than max temperature
         telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold+1.0);
@@ -130,7 +126,7 @@ public class TelemetryColdChainTest {
         reeferAggregate = storage.get(reeferID);
         // validation
         Assertions.assertEquals(1, reeferAggregate.getViolatedTemperatureCount());
-        Assertions.assertEquals(1, reeferAggregate.getTemperatureList().size());
+        Assertions.assertEquals(4, reeferAggregate.getTemperatureList().size());
     }
 
 

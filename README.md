@@ -1,6 +1,6 @@
 # Reefer Monitoring Agent 
 
-The main documentation for this project (the what, why, how) is part of the Vaccine project and can be [read here](https://ibm-cloud-architecture.github.ibm.com/vaccine-solution-main/solution/cold-monitoring/).
+The main documentation for this project (the what, why, how) is part of the Vaccine project and can be [read here](https://ibm-cloud-architecture.github.io/vaccine-solution-main/solution/cold-monitoring/).
 
 This project uses the following technologies to support consuming refrigerator or freezer IoT units and assess temperature / cold chain violation or / and sensor anomaly detection.
 
@@ -133,11 +133,31 @@ Modify KAFKA_CERT_PWD in the `scripts/appsody.env` file.
 appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/deployment/certs"
 ```
 
+## Running on OpenShift with Event Streams co-located in same cluster
 
-## Running on OpenShift with Event Streams
+To run on OpenShift, you will need to inject the address of your Kafka settings into your Quarkus application via the environment variables and mount points. The `app-deploy.yaml` file contains declarations to inject those data at runtime.
 
-To run on OpenShift, you will need to inject the address of your Kafka settings into your Quarkus application via the environment variables and mount point. The `app-deploy.yaml` file contains declarations to inject those data at runtime. 
-We just need to add config maps and secrets to the project where we want to deploy this app.
+We just need to add config maps to define values for those environment variables and secrets to get password and TLS certificates.
+
+We will use internal bootstrap URL with Mutual TLS to authenticate the user.
+
+* If not done create a TLS user for the internal bootstrap end point of the Event Streams instance the application will connect to. 
+
+```shell
+oc get kafkausers -n eventstreams
+# we will use minimal-prod-ibm-es-kafka-user as it is a tls user.
+minimal-prod-ibm-es-georep-source-user   scram-sha-512    simple
+minimal-prod-ibm-es-kafka-user           tls              simple
+```
+
+* Get bootstrap URL. The output of the command `cloudctl es init` returns the external URL, but as we need the internal bootstrap URL. To get it we use the OpenShift console and the Installed Operators > ibm-eventstreams... > EventStreams Detauls for the instance we want to connect. In the YAML view we get the kafkaListeners:
+
+```yaml
+  kafkaListeners:
+    - addresses:
+        - host: minimal-prod-kafka-bootstrap.eventstreams.svc
+          port: 9093
+```
 
 * Modify the `src/main/kubernetes/configmap.yaml` by replacing the user and broker data with the matching user and bootstrap server external URL. We have to use the external URL as the app is not deployed in the same cluster as Event Streams. See next section if you deploy on the same cluster and want to use the internal URL. 
 
@@ -147,8 +167,8 @@ kind: ConfigMap
 metadata:
   name: kafka-brokers
 data:
-  user: <kafka-username>
-  brokers: <broker-bootstrap-url>
+  user: minimal-prod-ibm-es-kafka-user
+  brokers: minimal-prod-kafka-bootstrap-eventstreams.svc:9093
 ```
 
 Then do: `oc apply -f src/main/kubernetes/configmap.yaml`
@@ -156,13 +176,13 @@ Then do: `oc apply -f src/main/kubernetes/configmap.yaml`
 * Move secret for user password from the Event Streams project to the target project. Here is an example of such command: 
 
 ```shell
-oc get secret jesus -n eventstreams --export -o yaml | oc apply -n sandbox -f -
+oc get secret minimal-prod-ibm-es-kafka-user -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
 ```
 
 * Get the cluster public certificate <>-cluster-ca-cert secret from the Event Streams project to the target project. This certificate includes a ca.pa12 entry and a truststore password which will be used in the deployment manifest.
 
-```
-oc get secret minimal-prod-cluster-ca-cert -n eventstreams --export -o yaml | oc apply -n jbsandbox -f -
+```shell
+oc get secret minimal-prod-cluster-ca-cert -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
 ```
 
 Here is an example of content:
@@ -188,9 +208,23 @@ ca.p12:       1114 bytes
 ca.password:  12 bytes
 ```
 
-* Modify the secret name in the volume declaration. The mountPath and subPath need to match the data key 'ca.p12'. 
+* Modify the name of the secret for the USER_CERT_PWD declaration in app-appsody.yaml`:
 
 ```yaml
+  - name: USER_CERT_PATH
+    value: /deployments/certs/user-ca.p12
+  - name: USER_CERT_PWD
+      valueFrom:
+        secretKeyRef:
+          key: user.password
+          name: minimal-prod-ibm-es-kafka-user
+```
+
+* Modify the secret name in the volume declaration of the `app-appsody.yaml`. The mountPath and subPath need to match the data key 'ca.p12'. 
+
+```yaml
+
+
   volumeMounts:
   - mountPath: /deployments/certs/ca.p12
     name: es-cert
@@ -207,13 +241,18 @@ ca.password:  12 bytes
 
 ```shell
 appsody deploy -t <registry>/<imagename>:<tag> --push --namespace <targetproject>
+
+appsody deploy -t ibmcase/reefer-monitor-agent:0.0.1 --push --namespace vaccine-solution
+
 ```
 
-* The app is exposed as to the external world via a route. `oc get routes`, so the web socket connection to get the price changes from kafka is at http://<routes>/prices.html.
+* The app is exposed as to the external world via a route. `oc get routes`, so the web socket connection to get the price changes from kafka is at http://<routes>/.html.
 
 If you want to remove the deployment:
 
-`oc delete app-deploy.yaml`
+```shell
+oc delete app-deploy.yaml
+```
 
 
 ## Running locally with docker compose

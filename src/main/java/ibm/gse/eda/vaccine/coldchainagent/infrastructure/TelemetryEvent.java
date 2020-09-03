@@ -5,7 +5,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
 public class TelemetryEvent {
-
     public String containerID;
     public Telemetry payload;
     public String timestamp;
@@ -22,4 +21,5 @@ public class TelemetryEvent {
             "payload: " + this.payload.toString() +
             "}";
     }
+
 }

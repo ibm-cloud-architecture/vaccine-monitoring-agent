@@ -7,4 +7,5 @@ public class TelemetryDeserializer extends JsonbDeserializer<TelemetryEvent> {
         // pass the class to the parent.
         super(TelemetryEvent.class);
     }
+    
 }

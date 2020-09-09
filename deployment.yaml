@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: vaccine-monitory-agent
-        image: bmainaliibm/vaccine-monitoring:4.0
+        image: bmainaliibm/vaccine-monitoring:7.0
         ports:
         - containerPort: 8080
         env:
@@ -40,10 +40,12 @@ spec:
               key: kafka-api-key
               name: kafka-config
               optional: true
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
         dnsPolicy: ClusterFirstWithHostNet
         hostNetwork: true
-
-
 ---
 
 apiVersion: v1

@@ -25,7 +25,7 @@ public class ContainerTrackerInteractiveQueries {
     private static final Logger LOG = Logger.getLogger(ContainerTrackerInteractiveQueries.class);
 
     // @ConfigProperty(name = "hostname")
-    String host = System.getenv("HOSTNAME");
+    String host = System.getenv("POD_IP");
 
     @Inject
     KafkaStreams streams;

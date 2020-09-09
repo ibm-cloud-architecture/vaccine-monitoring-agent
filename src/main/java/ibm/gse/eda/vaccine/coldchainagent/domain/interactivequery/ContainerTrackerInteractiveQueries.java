@@ -27,7 +27,7 @@ public class ContainerTrackerInteractiveQueries {
     private static final Logger LOG = Logger.getLogger(ContainerTrackerInteractiveQueries.class);
 
     @Inject
-    @ConfigProperty(name = "hostname")
+    @ConfigProperty(name = "POD_IP")
     String host;
 
     @Inject

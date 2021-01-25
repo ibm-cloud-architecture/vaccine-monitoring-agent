@@ -1,4 +1,4 @@
-# Reefer Monitoring Agent 
+# Reefer Monitoring Agent
 
 The main documentation for this project (the what, why, how) is part of the Vaccine project and can be [read here](https://ibm-cloud-architecture.github.io/vaccine-solution-main/solution/cold-monitoring/).
 
@@ -29,7 +29,7 @@ As it is quite simple to connect to Event Streams running on OpenShift cluster, 
 * Connect CLI to Event Streams:
 
 ```shell
-oc login 
+oc login
 cloudctl es init
 
 Select an instance:
@@ -75,7 +75,7 @@ appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/
 
 ## Deploy to OpenShift
 
-* Build and push the image to private or public registry. 
+* Build and push the image to private or public registry.
 
 ```shell
 # if not logged yes to your openshift cluster where the docker private registry resides do:
@@ -141,7 +141,7 @@ We just need to add config maps to define values for those environment variables
 
 We will use internal bootstrap URL with Mutual TLS to authenticate the user.
 
-* If not done create a TLS user for the internal bootstrap end point of the Event Streams instance the application will connect to. 
+* If not done create a TLS user for the internal bootstrap end point of the Event Streams instance the application will connect to.
 
 ```shell
 oc get kafkausers -n eventstreams
@@ -159,7 +159,7 @@ minimal-prod-ibm-es-kafka-user           tls              simple
           port: 9093
 ```
 
-* Modify the `src/main/kubernetes/configmap.yaml` by replacing the user and broker data with the matching user and bootstrap server external URL. We have to use the external URL as the app is not deployed in the same cluster as Event Streams. See next section if you deploy on the same cluster and want to use the internal URL. 
+* Modify the `src/main/kubernetes/configmap.yaml` by replacing the user and broker data with the matching user and bootstrap server external URL. We have to use the external URL as the app is not deployed in the same cluster as Event Streams. See next section if you deploy on the same cluster and want to use the internal URL.
 
 ```yaml
 apiVersion: v1
@@ -173,7 +173,7 @@ data:
 
 Then do: `oc apply -f src/main/kubernetes/configmap.yaml`
 
-* Move secret for user password from the Event Streams project to the target project. Here is an example of such command: 
+* Move secret for user password from the Event Streams project to the target project. Here is an example of such command:
 
 ```shell
 oc get secret minimal-prod-ibm-es-kafka-user -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
@@ -220,7 +220,7 @@ ca.password:  12 bytes
           name: minimal-prod-ibm-es-kafka-user
 ```
 
-* Modify the secret name in the volume declaration of the `app-appsody.yaml`. The mountPath and subPath need to match the data key 'ca.p12'. 
+* Modify the secret name in the volume declaration of the `app-appsody.yaml`. The mountPath and subPath need to match the data key 'ca.p12'.
 
 ```yaml
 
@@ -237,7 +237,7 @@ ca.password:  12 bytes
 
 ```
 
-* Deploy the application via: 
+* Deploy the application via:
 
 ```shell
 appsody deploy -t <registry>/<imagename>:<tag> --push --namespace <targetproject>
@@ -270,7 +270,7 @@ or http://localhost:8080/ktable to view all ktable
 and see what is in ktable
 
 
-### Running locally with multiple instance 
+### Running locally with multiple instance
 
 `$ docker-compose -f docker-compose-code.yaml up --scale vaccinemonotoringagent=5`
 
@@ -281,3 +281,7 @@ now you can access your endpoint using
 `http://localhost:4000/reefer-tracker/meta-data`
 
 you should get request from one of the docker instance running
+
+## TODO
+- Add in `agent-cmap` creation
+- Update `oc create secret generic es-kafka-user --from-file=user.p12=/Users/osowski/Downloads/reo-tls-creds/user.p12 --from-file=user.password=/Users/osowski/Downloads/reo-tls-creds/user.password`

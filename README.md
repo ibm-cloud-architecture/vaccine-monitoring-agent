@@ -103,17 +103,17 @@ oc apply -f src/main/kubernetes/configmap.yaml
 oc get kafkausers -n eventstreams
 ```
 
- Get username and then to get the password do the following:
+Get username and then to get the password do the following:
 
- ```shell
+```shell
 oc get secret <username>  -o jsonpath='{.data.password}' | base64 --decode
- ```
+```
 
 Modify the KAFKA_USER and KAFKA_PASSWORD variables in the `scripts/appsody.env` file.
 
 * Copy user's secret
 
-```shell
+```
 oc get secret jesus -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
 ```
 

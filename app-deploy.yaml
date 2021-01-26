@@ -48,7 +48,7 @@ metadata:
     stack.appsody.dev/version: 1.7.1
   name: reefer-monitoring-agent
 spec:
-  applicationImage: ibmcase/reefer-monitoring-agent:0.1.27
+  applicationImage: ibmcase/reefer-monitoring-agent:latest
   createKnativeService: false
   env:
   - name: POD_IP

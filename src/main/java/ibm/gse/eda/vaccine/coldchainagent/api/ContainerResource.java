@@ -82,7 +82,6 @@ public class ContainerResource {
         return interactiveQueries.getMetaData();
     }
 
-
     private Response fetchReeferData(final String host, final int port, String reeferID, GenericType<Response> responseType) {
         String url = String.format("http://%s:%d/reefer-tracker/data/%s", host, port, reeferID);
         System.out.println(url);

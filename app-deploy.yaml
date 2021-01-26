@@ -3,17 +3,18 @@ kind: AppsodyApplication
 metadata:
   annotations:
     cekit.io/version: 3.7.0
-    commit.image.appsody.dev/date: Wed Sep 9 13:12:56 2020 -0700
-    commit.image.appsody.dev/message: 'Merge pull request #2 from ibm-cloud-architecture/interactive'
+    commit.image.appsody.dev/date: Mon Jan 25 17:09:55 2021 -0600
+    commit.image.appsody.dev/message: Updated monitoring-agent for latest app-deploy.yaml
+      integration
     commit.stack.appsody.dev/contextDir: /experimental/ibm-gse-eda-quarkus
     commit.stack.appsody.dev/date: Sun Jul 19 21:24:37 2020 -0700
     commit.stack.appsody.dev/message: update python stack
     graalvm-archive-filename: graalvm-ce-linux-amd64-20.1.0-java11.tar.gz
     graalvm-archive-url: https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java11-linux-amd64-20.1.0.tar.gz
     graalvm-version: java11-20.1.0
-    image.opencontainers.org/created: "2021-01-25T16:41:04-06:00"
+    image.opencontainers.org/created: "2021-01-26T14:55:49-06:00"
     image.opencontainers.org/documentation: https://github.com/osowski/vaccine-monitoring-agent
-    image.opencontainers.org/revision: 0bfbe5500f5955a29e7f3c0f72f9634c2a1ecd84
+    image.opencontainers.org/revision: c625382ec8cfdcff8da019946971f3a3a8c80596-modified
     image.opencontainers.org/source: https://github.com/osowski/vaccine-monitoring-agent/tree/dev
     image.opencontainers.org/url: https://github.com/osowski/vaccine-monitoring-agent
     k8s.io/description: Quarkus.io builder image for building Quarkus applications.
@@ -46,40 +47,53 @@ metadata:
     stack.appsody.dev/id: ibm-gse-eda-quarkus
     stack.appsody.dev/version: 1.7.1
   name: reefer-monitoring-agent
-  namespace: vaccine-solution
 spec:
-  applicationImage: dev.local/reefer-monitoring-agent
+  applicationImage: ibmcase/reefer-monitoring-agent:latest
   createKnativeService: false
   env:
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
   - name: KAFKA_BROKERS
     valueFrom:
       configMapKeyRef:
-        key: brokers
-        name: kafka-brokers
-  - name: KAFKA_USER
+        key: kafka-brokers
+        name: agent-cmap
+  - name: REEFER_TOPIC
     valueFrom:
       configMapKeyRef:
-        key: user
-        name: kafka-brokers
-  - name: KAFKA_PASSWORD
+        key: reefer-topic
+        name: agent-cmap
+  - name: TELEMETRY_TOPIC
     valueFrom:
-      secretKeyRef:
-        key: user.password
-        name: minimal-prod-ibm-es-kafka-user
+      configMapKeyRef:
+        key: telemetry-topic
+        name: agent-cmap
+  #- name: KAFKA_USER
+  #  valueFrom:
+  #    configMapKeyRef:
+  #      key: kafka-user
+  #      name: agent-cmap
+  #- name: KAFKA_PASSWORD
+  #  valueFrom:
+  #    secretKeyRef:
+  #      key: password
+  #      name: eventstreams-api-key
   - name: KAFKA_CERT_PATH
     value: /deployments/certs/ca.p12
   - name: KAFKA_CERT_PWD
     valueFrom:
       secretKeyRef:
         key: ca.password
-        name: minimal-prod-cluster-ca-cert
+        name: kafka-cluster-ca-cert
   - name: USER_CERT_PATH
     value: /deployments/certs/user.p12
   - name: USER_CERT_PWD
     valueFrom:
       secretKeyRef:
         key: user.password
-        name: minimal-prod-ibm-es-kafka-user
+        name: kafka-user
   expose: true
   livenessProbe:
     failureThreshold: 12
@@ -114,9 +128,9 @@ spec:
     readOnly: true
     subPath: user.p12
   volumes:
-  - name: user-cert
-    secret:
-      secretName: minimal-prod-ibm-es-kafka-user
   - name: es-cert
     secret:
-      secretName: minimal-prod-cluster-ca-cert
+      secretName: kafka-cluster-ca-cert
+  - name: user-cert
+    secret:
+      secretName: kafka-user

@@ -113,12 +113,8 @@ Modify the KAFKA_USER and KAFKA_PASSWORD variables in the `scripts/appsody.env` 
 
 * Copy user's secret
 
-```
+```shell
 oc get secret jesus -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
-```
-
-
-mv es-cert.p12 certs
 ```
 
 The cluster Truststore certificate is required for all external connections and is available to download from the Cluster connection panel under the Certificates heading. Upon downloading the PKCS12 certificate, the certificate password will also be displayed.
@@ -135,118 +131,97 @@ appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/
 
 ## Running on OpenShift with Event Streams co-located in same cluster
 
-To run on OpenShift, you will need to inject the address of your Kafka settings into your Quarkus application via the environment variables and mount points. The `app-deploy.yaml` file contains declarations to inject those data at runtime.
+To run on OpenShift, you will need to inject the address of your Kafka settings into your Quarkus application via the environment variables and mount points. The `app-deploy.yaml` file contains declarations to inject the required information at runtime.
 
-We just need to add config maps to define values for those environment variables and secrets to get password and TLS certificates.
+There are multiple required configuration elements for connectivity to IBM Event Streams (Kafka) prior to deployment:
+  - A KafkaUser with TLS-based authentication credentials
+  - A `ConfigMap` named `agent-cmap` containing the following key-value pairs:
+    -  `kafka-brokers`
+    -  `reefer-topic`
+    -  `telemetry-topic` - _(this topic should match the output topic of the [vaccine-reefer-simulator](https://github.com/ibm-cloud-architecture/vaccine-reefer-simulator))_
+  - A `Secret` copied from the `eventstreams` namespace containing the KafkaUser's TLS credentials
+  - A `Secret` copied from the `eventstreams` namespace containing the Event Streams' clusters certificates
 
-We will use internal bootstrap URL with Mutual TLS to authenticate the user.
+### Create a TLS User
 
-* If not done create a TLS user for the internal bootstrap end point of the Event Streams instance the application will connect to.
+* Create a TLS user for the internal bootstrap endpoint of the Event Streams instance via the **"Connect to this cluster"** dialog in the Event Streams console.
 
+* Validate the user is created and available via the OpenShift CLI
 ```shell
 oc get kafkausers -n eventstreams
-# we will use minimal-prod-ibm-es-kafka-user as it is a tls user.
-minimal-prod-ibm-es-georep-source-user   scram-sha-512    simple
-minimal-prod-ibm-es-kafka-user           tls              simple
+# we will use kafka-tls-user as it is a TLS user.
+kafka-scram-user                         scram-sha-512    simple
+kafka-tls-user                           tls              simple
 ```
 
-* Get bootstrap URL. The output of the command `cloudctl es init` returns the external URL, but as we need the internal bootstrap URL. To get it we use the OpenShift console and the Installed Operators > ibm-eventstreams... > EventStreams Detauls for the instance we want to connect. In the YAML view we get the kafkaListeners:
+### Get Cluster bootstrap URL
 
-```yaml
-  kafkaListeners:
-    - addresses:
-        - host: minimal-prod-kafka-bootstrap.eventstreams.svc
-          port: 9093
+* Get the cluster's bootstrap URL via the **"Connect to this cluster"** dialog in the Event Streams console. It is in the format of `{cluster-name}-bootstrap.eventstreams.svc:9093` with `{cluster-name}` being replaced with the actual name of your Event Streams cluster.
+
+### Create ConfigMap
+
+A sample configuration command for `agent-cmap` ConfigMap is included below:
+
+```
+oc create configmap agent-cmap \
+--from-literal=kafka-brokers={cluster-name}-kafka-bootstrap.eventstreams.svc:9093 \
+--from-literal=reefer-topic=vaccine-reefers \
+--from-literal=telemetries-topic=vaccine-reefer-telemetries
 ```
 
-* Modify the `src/main/kubernetes/configmap.yaml` by replacing the user and broker data with the matching user and bootstrap server external URL. We have to use the external URL as the app is not deployed in the same cluster as Event Streams. See next section if you deploy on the same cluster and want to use the internal URL.
+Replace the values for `kafka-brokers`, `reefer-topic`, and `telemetry-topic` to the values that match your environment.
 
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kafka-brokers
-data:
-  user: minimal-prod-ibm-es-kafka-user
-  brokers: minimal-prod-kafka-bootstrap-eventstreams.svc:9093
-```
+### Copy Event Streams credentials
 
-Then do: `oc apply -f src/main/kubernetes/configmap.yaml`
-
-* Move secret for user password from the Event Streams project to the target project. Here is an example of such command:
+* Copy the user's TLS credentials from the Event Streams project to the target project:
 
 ```shell
-oc get secret minimal-prod-ibm-es-kafka-user -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
+oc get secret {kafka-user} -n eventstreams --export -o yaml | oc apply -n {target-namespace} -f -
 ```
 
-* Get the cluster public certificate <>-cluster-ca-cert secret from the Event Streams project to the target project. This certificate includes a ca.pa12 entry and a truststore password which will be used in the deployment manifest.
+* Copy the Kafka cluster's public certificate from the Event Streams project to the target project _(This certificate includes a ca.pa12 entry and a truststore password which will be used in the deployment manifest.)_:
 
 ```shell
-oc get secret minimal-prod-cluster-ca-cert -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
+oc get secret {cluster-name}-cluster-ca-cert -n eventstreams --export -o yaml | oc apply -n {target-namespace} -f -
 ```
 
-Here is an example of content:
+### Update app-deploy.yaml
 
-```
-Name:         minimal-prod-cluster-ca-cert
-Namespace:    jbsandbox
-Labels:       app.kubernetes.io/instance=minimal-prod
-              app.kubernetes.io/managed-by=eventstreams-cluster-operator
-              app.kubernetes.io/name=eventstreams
-              app.kubernetes.io/part-of=eventstreams-minimal-prod
-              eventstreams.ibm.com/cluster=minimal-prod
-              eventstreams.ibm.com/kind=Kafka
-              eventstreams.ibm.com/name=eventstreams
-Annotations:  eventstreams.ibm.com/ca-cert-generation=0
+Sections of the `app-deploy.yaml` need to be updated to correspond to your locally copied Secrets from the `eventstreams` namespace.
 
-Type:  Opaque
-
-Data
-====
-ca.crt:       1164 bytes
-ca.p12:       1114 bytes
-ca.password:  12 bytes
-```
-
-* Modify the name of the secret for the USER_CERT_PWD declaration in app-appsody.yaml`:
+* Modify the **name** of the Secrets referenced for the environment variables declarations in `app-deploy.yaml`:
 
 ```yaml
-  - name: USER_CERT_PATH
-    value: /deployments/certs/user-ca.p12
-  - name: USER_CERT_PWD
-      valueFrom:
-        secretKeyRef:
-          key: user.password
-          name: minimal-prod-ibm-es-kafka-user
+- name: KAFKA_CERT_PWD
+  valueFrom:
+    secretKeyRef:
+      key: ca.password
+      name: {cluster-name}-cluster-ca-cert
+...
+- name: USER_CERT_PWD
+  valueFrom:
+    secretKeyRef:
+      key: user.password
+      name: {kafka-user}
 ```
 
-* Modify the secret name in the volume declaration of the `app-appsody.yaml`. The mountPath and subPath need to match the data key 'ca.p12'.
+* Modify the **secretName** of the Secrets referenced in the `volumes` declaration of the `app-deploy.yaml`.
 
 ```yaml
-
-
-  volumeMounts:
-  - mountPath: /deployments/certs/ca.p12
-    name: es-cert
-    readOnly: true
-    subPath: ca.p12
-  volumes:
-  - name: es-cert
-    secret:
-      secretName: minimal-prod-cluster-ca-cert
-
+volumes:
+- name: es-cert
+  secret:
+    secretName: {cluster-name}-cluster-ca-cert
+- name: user-cert
+  secret:
+    secretName: {kafka-user}
 ```
 
-* Deploy the application via:
+### Deploy the Appsody application
 
 ```shell
-appsody deploy -t <registry>/<imagename>:<tag> --push --namespace <targetproject>
-
-appsody deploy -t ibmcase/reefer-monitor-agent:0.0.1 --push --namespace vaccine-solution
-
+appsody deploy -t ibmcase/reefer-monitoring-agent:latest --no-build --namespace {target-namespace}
 ```
-
-* The app is exposed as to the external world via a route. `oc get routes`, so the web socket connection to get the price changes from kafka is at http://<routes>/.html.
 
 If you want to remove the deployment:
 
@@ -281,7 +256,3 @@ now you can access your endpoint using
 `http://localhost:4000/reefer-tracker/meta-data`
 
 you should get request from one of the docker instance running
-
-## TODO
-- Add in `agent-cmap` creation
-- Update `oc create secret generic es-kafka-user --from-file=user.p12=/Users/osowski/Downloads/reo-tls-creds/user.p12 --from-file=user.password=/Users/osowski/Downloads/reo-tls-creds/user.password`

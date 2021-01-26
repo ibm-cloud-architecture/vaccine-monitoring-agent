@@ -67,7 +67,7 @@ public class ContainerResource {
             System.out.println("data found " + result.getResult());
             return Response.ok(result.getResult().get()).build();
         } else if (result.getHost().isPresent()) {
-            System.out.println("data found remotly " + result.getHost());
+            System.out.println("data found remotely " + result.getHost());
             return fetchReeferData(result.getHost().get(), result.getPort().getAsInt(), reeferID, new GenericType<Response>() {});
         } else {
 
@@ -82,7 +82,7 @@ public class ContainerResource {
         return interactiveQueries.getMetaData();
     }
 
-   
+
     private Response fetchReeferData(final String host, final int port, String reeferID, GenericType<Response> responseType) {
         String url = String.format("http://%s:%d/reefer-tracker/data/%s", host, port, reeferID);
         System.out.println(url);
@@ -101,5 +101,3 @@ public class ContainerResource {
 
 
 }
-
-

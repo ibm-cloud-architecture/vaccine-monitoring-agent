@@ -93,8 +93,10 @@ public class TelemetryAssessor {
         KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName,
                     Consumed.with(Serdes.String(),
                     telemetryEventSerde))
+                .peek((k, v) -> {
+                  LOG.debug(k + " -> " + v);
+                })
                 .map((k, v) -> {
-                    LOG.debug(k + " -> " + v);
                     if (v.payload != null){
                         return new KeyValue<String, TelemetryEvent>(v.containerID, v);
                     } else {
@@ -117,9 +119,13 @@ public class TelemetryAssessor {
             .withValueSerde(reeferAggregateSerde)
         );
         // send reefer info that has cold chain violated
-        reeferAggregateTable.toStream().filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
-                System.out.println("violated " + v.toString());
-                System.out.println("Send Notification **************->>> or message to reefer topic. ");
+        reeferAggregateTable.toStream()
+        .peek((k, v) -> {
+          LOG.debug(k + " -> " + v);
+        })
+        .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
+                LOG.info("Violated " + v.toString());
+                LOG.info("Send Notification **************->>> or message to reefer topic. ");
                 reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDate.now(),v));
         });
         return builder.build();

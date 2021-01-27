@@ -3,19 +3,19 @@ kind: AppsodyApplication
 metadata:
   annotations:
     cekit.io/version: 3.7.0
-    commit.image.appsody.dev/date: Wed Sep 2 21:51:55 2020 -0700
-    commit.image.appsody.dev/message: improve tests and fix bug in serialization,
-      improve deployment too
+    commit.image.appsody.dev/date: Wed Jan 27 12:55:49 2021 -0600
+    commit.image.appsody.dev/message: Merge branch 'dev' of https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent
+      into dev
     commit.stack.appsody.dev/contextDir: /experimental/ibm-gse-eda-quarkus
     commit.stack.appsody.dev/date: Sun Jul 19 21:24:37 2020 -0700
     commit.stack.appsody.dev/message: update python stack
     graalvm-archive-filename: graalvm-ce-linux-amd64-20.1.0-java11.tar.gz
     graalvm-archive-url: https://github.com/graalvm/graalvm-ce-builds/releases/download/vm-20.1.0/graalvm-ce-java11-linux-amd64-20.1.0.tar.gz
     graalvm-version: java11-20.1.0
-    image.opencontainers.org/created: "2020-09-03T08:51:30-07:00"
+    image.opencontainers.org/created: "2021-01-27T15:39:27-06:00"
     image.opencontainers.org/documentation: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent
-    image.opencontainers.org/revision: 56a53030d6f5caa242bef5d80696640639174268-modified
-    image.opencontainers.org/source: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent/tree/master
+    image.opencontainers.org/revision: 4c905789c14eeda7a46ecee5bdcd09f1648acfd7-modified
+    image.opencontainers.org/source: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent/tree/dev
     image.opencontainers.org/url: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent
     k8s.io/description: Quarkus.io builder image for building Quarkus applications.
     k8s.io/display-name: Centos + GraalVM + Maven Image
@@ -47,40 +47,45 @@ metadata:
     stack.appsody.dev/id: ibm-gse-eda-quarkus
     stack.appsody.dev/version: 1.7.1
   name: reefer-monitoring-agent
-  namespace: vaccine-solution
 spec:
-  applicationImage: ibmcase/reefer-monitor-agent:0.0.6
+  applicationImage: ibmcase/reefer-monitoring-agent:latest
   createKnativeService: false
   env:
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
   - name: KAFKA_BROKERS
     valueFrom:
       configMapKeyRef:
-        key: brokers
-        name: kafka-brokers
-  - name: KAFKA_USER
+        key: kafka-brokers
+        name: agent-cmap
+  - name: REEFER_TOPIC
     valueFrom:
       configMapKeyRef:
-        key: user
-        name: kafka-brokers
-  - name: KAFKA_PASSWORD
+        key: reefer-topic
+        name: agent-cmap
+  - name: TELEMETRY_TOPIC
     valueFrom:
-      secretKeyRef:
-        key: user.password
-        name: minimal-prod-ibm-es-kafka-user
+      configMapKeyRef:
+        key: telemetry-topic
+        name: agent-cmap
   - name: KAFKA_CERT_PATH
     value: /deployments/certs/ca.p12
   - name: KAFKA_CERT_PWD
     valueFrom:
       secretKeyRef:
         key: ca.password
-        name: minimal-prod-cluster-ca-cert
+        name: kafka-cluster-ca-cert
   - name: USER_CERT_PATH
     value: /deployments/certs/user.p12
   - name: USER_CERT_PWD
     valueFrom:
       secretKeyRef:
         key: user.password
-        name: minimal-prod-ibm-es-kafka-user
+        name: kafka-user
+  - name: EDA_LOGGING_LEVEL
+    value: DEBUG
   expose: true
   livenessProbe:
     failureThreshold: 12
@@ -115,9 +120,9 @@ spec:
     readOnly: true
     subPath: user.p12
   volumes:
-  - name: user-cert
-    secret:
-      secretName: minimal-prod-ibm-es-kafka-user
   - name: es-cert
     secret:
-      secretName: minimal-prod-cluster-ca-cert
+      secretName: kafka-cluster-ca-cert
+  - name: user-cert
+    secret:
+      secretName: kafka-user

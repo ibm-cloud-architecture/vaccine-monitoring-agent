@@ -167,9 +167,10 @@ oc create configmap agent-cm \
 --from-literal=kafka-brokers={cluster-name}-kafka-bootstrap.eventstreams.svc:9093 \
 --from-literal=reefer-topic=vaccine-reefers \
 --from-literal=telemetries-topic=vaccine-reefer-telemetries
+--from-literal=consumer-group=cold-chain-agent
 ```
 
-Replace the values for `kafka-brokers`, `reefer-topic`, and `telemetry-topic` to the values that match your environment.
+Replace the values for `kafka-brokers`, `reefer-topic`, and `telemetry-topic` to the values that match your environment. Update the value of `consumer-group` to provide a unique identifier or suffix for your application instance if you will be deploying this component in a shared environment.
 
 ### Copy Event Streams credentials
 

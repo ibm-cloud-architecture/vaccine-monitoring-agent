@@ -49,12 +49,18 @@ metadata:
   name: reefer-monitoring-agent
 spec:
   applicationImage: ibmcase/reefer-monitoring-agent:latest
+  pullPolicy: Always
   createKnativeService: false
   env:
   - name: POD_IP
     valueFrom:
       fieldRef:
         fieldPath: status.podIP
+  - name: QUARKUS_KAFKA_STREAMS_APPLICATION_ID
+    valueFrom:
+      configMapKeyRef:
+        key: consumer-group
+        name: agent-cm
   - name: KAFKA_BROKERS
     valueFrom:
       configMapKeyRef:

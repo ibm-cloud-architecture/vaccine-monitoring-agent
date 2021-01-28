@@ -59,17 +59,17 @@ spec:
     valueFrom:
       configMapKeyRef:
         key: kafka-brokers
-        name: agent-cmap
+        name: agent-cm
   - name: REEFER_TOPIC
     valueFrom:
       configMapKeyRef:
         key: reefer-topic
-        name: agent-cmap
+        name: agent-cm
   - name: TELEMETRY_TOPIC
     valueFrom:
       configMapKeyRef:
         key: telemetry-topic
-        name: agent-cmap
+        name: agent-cm
   - name: KAFKA_CERT_PATH
     value: /deployments/certs/ca.p12
   - name: KAFKA_CERT_PWD

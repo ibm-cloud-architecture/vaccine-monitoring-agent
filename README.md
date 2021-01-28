@@ -135,7 +135,7 @@ To run on OpenShift, you will need to inject the address of your Kafka settings 
 
 There are multiple required configuration elements for connectivity to IBM Event Streams (Kafka) prior to deployment:
   - A KafkaUser with TLS-based authentication credentials
-  - A `ConfigMap` named `agent-cmap` containing the following key-value pairs:
+  - A `ConfigMap` named `agent-cm` containing the following key-value pairs:
     -  `kafka-brokers`
     -  `reefer-topic`
     -  `telemetry-topic` - _(this topic should match the output topic of the [vaccine-reefer-simulator](https://github.com/ibm-cloud-architecture/vaccine-reefer-simulator))_
@@ -160,10 +160,10 @@ kafka-tls-user                           tls              simple
 
 ### Create ConfigMap
 
-A sample configuration command for `agent-cmap` ConfigMap is included below:
+A sample configuration command for `agent-cm` ConfigMap is included below:
 
 ```
-oc create configmap agent-cmap \
+oc create configmap agent-cm \
 --from-literal=kafka-brokers={cluster-name}-kafka-bootstrap.eventstreams.svc:9093 \
 --from-literal=reefer-topic=vaccine-reefers \
 --from-literal=telemetries-topic=vaccine-reefer-telemetries

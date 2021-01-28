@@ -8,26 +8,26 @@ public class Telemetry {
     public String measurement_time;
     public String product_id;
     public double temperature;
-    public double target_temperature; 
-    public double ambiant_temperature; 
-    public double kilowatts; 
+    public double target_temperature;
+    public double ambiant_temperature;
+    public double kilowatts;
     public double time_door_open;
-    public int content_type; 
+    public int content_type;
     public int defrost_cycle;
-    public double oxygen_level; 
-    public double nitrogen_level; 
+    public double oxygen_level;
+    public double nitrogen_level;
     public double humidity_level;
     public double target_humidity_level;
-    public double carbon_dioxide_level; 
-    public boolean fan_1; 
-    public boolean fan_2; 
+    public double carbon_dioxide_level;
+    public boolean fan_1;
+    public boolean fan_2;
     public boolean fan_3;
     public double latitude;
     public double longitude;
     public int maintenance_required;
 
     public Telemetry(){
-        
+
     }
 
     public Telemetry(String payload){
@@ -55,5 +55,13 @@ public class Telemetry {
             this.longitude = Double.parseDouble(arrayValues[18].trim());
             this.maintenance_required = Integer.parseInt(arrayValues[19].trim());
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Telemetry [ container_id=" + this.container_id + ", measurement_time=" + this.measurement_time
+                + ", product_id=" + this.product_id + ", temperature=" + this.temperature + ", target_temperature="
+                + this.target_temperature + ", oxygen_level=" + this.oxygen_level + ", carbon_dioxide_level="
+                + this.carbon_dioxide_level + ", maintenance_required=" + this.maintenance_required + " ]";
     }
 }

@@ -1,7 +1,7 @@
 certs/es-cert.jks
 certs/IBM-Data-and-AI.crt
 certs/es-cert.p12
-certs/server.truststore
+certs/truststore.p12
 scripts/setenv.sh
 scripts/appsody.env
 src/main/kubernetes/configmap.yaml

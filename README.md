@@ -5,7 +5,7 @@ The main documentation for this project (the what, why, how) is part of the Vacc
 This project uses the following technologies to support consuming refrigerator or freezer IoT units and assess temperature / cold chain violation or / and sensor anomaly detection.
 
 * Event Streams on Cloud Pack for Integration
-* Quarkus 1.7.1+
+* Quarkus 1.11.0
 * Reactive Messaging
 * Kafka Streams, and Ktable with interactive queries
 
@@ -69,7 +69,7 @@ Modify KAFKA_CERT_PWD in the `scripts/appsody.env` file.
 
 * Start appsody run with the environment variables, so the quarkus kafka app is remotely connected to Event Streams.
 
-```
+```shell
 appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/deployment/certs"
 ```
 
@@ -91,12 +91,6 @@ appsody build -t vaccine-solution/vaccine-monitoring-agent:0.0.1 [--push-url $IM
  appsody build -t ibmcase/vaccine-monitoring-agent:0.0.1 --push
 ```
 
-* Define config map
-
-```
-oc apply -f src/main/kubernetes/configmap.yaml
-```
-
 * Select one of the kafka users defined or create a new one with the produce, consume messages and create topic and schemas authorizations, on all topics or topic with a specific prefix, on all consumer groups or again with a specific prefix, all transaction IDs.
 
 ```shell
@@ -116,8 +110,16 @@ Modify the KAFKA_USER and KAFKA_PASSWORD variables in the `scripts/appsody.env` 
 ```
 oc get secret jesus -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
 ```
+* Define config map for Kafka broker URL and user
+
+```
+oc apply -f src/main/kubernetes/configmap.yaml
+```
 
 
+* Get TLS certificates
+
+```
 mv es-cert.p12 certs
 ```
 
@@ -150,7 +152,7 @@ minimal-prod-ibm-es-georep-source-user   scram-sha-512    simple
 minimal-prod-ibm-es-kafka-user           tls              simple
 ```
 
-* Get bootstrap URL. The output of the command `cloudctl es init` returns the external URL, but as we need the internal bootstrap URL. To get it we use the OpenShift console and the Installed Operators > ibm-eventstreams... > EventStreams Detauls for the instance we want to connect. In the YAML view we get the kafkaListeners:
+* Get bootstrap URL. The output of the command `cloudctl es init` returns the external URL, but as we need the internal bootstrap URL. To get it we use the OpenShift console and the Installed Operators > ibm-eventstreams... > EventStreams Defaults for the instance we want to connect. In the YAML view we get the kafkaListeners:
 
 ```yaml
   kafkaListeners:

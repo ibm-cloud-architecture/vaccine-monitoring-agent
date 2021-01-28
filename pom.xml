@@ -10,7 +10,7 @@
 <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <quarkus.version>1.7.1.Final</quarkus.version>
+    <quarkus.version>1.11.0.Final</quarkus.version>
     <mavenSunfire.version>3.0.0-M5</mavenSunfire.version>
     <testcontainer.version>1.14.3</testcontainer.version>
   </properties>

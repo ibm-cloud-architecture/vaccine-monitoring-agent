@@ -28,7 +28,7 @@ import org.jboss.logging.Logger;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAggregateSerde;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
-import io.quarkus.kafka.client.serialization.JsonbSerde;
+import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 /**
  * A bean consuming telemetry events from the "telemetries" Kafka topic and
@@ -85,16 +85,19 @@ public class TelemetryAssessor {
     @Produces
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
-        
-        JsonbSerde<TelemetryEvent> telemetryEventSerde = new JsonbSerde<>(TelemetryEvent.class);
+
+        ObjectMapperSerde<TelemetryEvent> telemetryEventSerde = new ObjectMapperSerde<>(
+                TelemetryEvent.class);
         ReeferAggregateSerde reeferAggregateSerde = new ReeferAggregateSerde();
         // from original message create stream with key containerID and value as it is
         // 1- steam from kafka topic streamTopic and deserialize with key as string and value ad TelemetryEvent
-        KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName, 
-                    Consumed.with(Serdes.String(), 
+        KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName,
+                    Consumed.with(Serdes.String(),
                     telemetryEventSerde))
-                .map((k, v) -> { 
-                    LOG.debug(k + " -> " + v);
+                .peek((k, v) -> {
+                  LOG.debug(k + " -> " + v);
+                })
+                .map((k, v) -> {
                     if (v.payload != null){
                         return new KeyValue<String, TelemetryEvent>(v.containerID, v);
                     } else {
@@ -102,30 +105,34 @@ public class TelemetryAssessor {
                     }
                 });
         // for each message call anomaly detector
-        // telemetryStream.peek(( k,telemetryEvent ) -> {
-        //     anomalyDetector(k, telemetryEvent);
-        // });
+        telemetryStream.peek(( k,telemetryEvent ) -> {
+             anomalyDetector(k, telemetryEvent);
+         });
 
         // group stream by key and serialized with key as string and value ad TelemetryEvent
         KGroupedStream<String, TelemetryEvent> telemetryGroup = telemetryStream.groupByKey(Grouped.with(Serdes.String(), telemetryEventSerde));
         // create table with store as containerTable
         KTable<String, ReeferAggregate> reeferAggregateTable = telemetryGroup.aggregate(
-            () -> new ReeferAggregate(maxCount,temperatureThreshold), 
+            () -> new ReeferAggregate(maxCount,temperatureThreshold),
             (k, newTelemetry, currentAggregate) -> currentAggregate.update(k,newTelemetry.payload.temperature),
             Materialized.<String, ReeferAggregate, KeyValueStore<Bytes, byte[]>>as(REEFER_AGGREGATE_TABLE)
             .withKeySerde(Serdes.String())
-            .withValueSerde(reeferAggregateSerde)     
+            .withValueSerde(reeferAggregateSerde)
         );
         // send reefer info that has cold chain violated
-        reeferAggregateTable.toStream().filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
-                System.out.println("violated " + v.toString());
-                System.out.println("Send Notification **************->>> or message to reefer topic. ");
+        reeferAggregateTable.toStream()
+        .peek((k, v) -> {
+          LOG.debug(k + " -> " + v);
+        })
+        .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
+                LOG.info("Violated " + v.toString());
+                LOG.info("Send Notification **************->>> or message to reefer topic. ");
                 reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDate.now(),v));
         });
         return builder.build();
     }
-   
-/*
+
+
     private void anomalyDetector(String key, TelemetryEvent telemetryEvent){
         if (telemetryEvent != null){
             if (predictions_enabled) {
@@ -141,25 +148,25 @@ public class TelemetryAssessor {
                 int number = new Random().nextInt(10);
                 if (number > 6) anomalyFound = true;
             }
-    
+
             if (anomalyFound)
             {
                 LOG.info("A reefer anomaly has been predicted. Therefore, sending a ReeferAnomaly Event to the appropriate topic");
                 ReeferEvent cae = new ReeferEvent(
-                            telemetryEvent.containerID, 
+                            telemetryEvent.containerID,
                             telemetryEvent.timestamp,
                             telemetryEvent.payload);
                 LOG.info("Reefer Anomaly Event object sent: " + cae.toString());
-    
+
                 // This message will be sent on, create a new message which acknowledges the incoming message when it is acked
                 telEmitter.send(new KeyValue<String,ReeferEvent>(key, cae));
             }
         }
     }
-    */
+    
 
 
-    // used for testing 
+    // used for testing
     public TelemetryAssessor(double temperatureThreshold, String topicName, int maxCount) {
         this.temperatureThreshold = temperatureThreshold;
         this.telemetryTopicName = topicName;

@@ -9,6 +9,7 @@ target/
 .classpath
 .classpath
 .classpath
-app-deploy.yaml
 .settings/org.eclipse.core.resources.prefs
 .vscode/settings.json
+.env
+src/main/kubernetes/secret.yaml

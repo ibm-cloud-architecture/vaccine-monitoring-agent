@@ -28,6 +28,12 @@ public class ReeferEvent {
         this.record = payload;
     }
 
+    public ReeferEvent(String ContainerID, String localDate, Telemetry payload){
+        this.containerID = ContainerID;
+        this.timestamp = LocalDate.parse(localDate);
+        this.type = "Container Anomaly Detected";
+        this.record = payload;
+    }
    
     public String toString(){
         return "{" + 

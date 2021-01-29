@@ -1,16 +1,18 @@
 <?xml version="1.0"?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
-
+<!--
   <parent>
     <groupId>dev.appsody</groupId>
     <artifactId>quarkus</artifactId>
     <version>[0.4,0.5)</version>
   </parent> 
+-->
 <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <quarkus.version>1.11.0.Final</quarkus.version>
+    
     <mavenSunfire.version>3.0.0-M5</mavenSunfire.version>
     <testcontainer.version>1.14.3</testcontainer.version>
   </properties>

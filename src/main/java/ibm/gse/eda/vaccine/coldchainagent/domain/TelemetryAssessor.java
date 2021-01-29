@@ -1,7 +1,7 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
-import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.util.Random;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -22,12 +22,16 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAggregateSerde;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 /**
@@ -60,9 +64,9 @@ public class TelemetryAssessor {
     public @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
 
 
-    // @Inject
-    // @RestClient
-    // ScoringService scoringService;
+    @Inject
+    @RestClient
+    ScoringService scoringService;
 
     public int count;
     private boolean anomalyFound = false;
@@ -135,7 +139,7 @@ public class TelemetryAssessor {
 
     private void anomalyDetector(String key, TelemetryEvent telemetryEvent){
         if (telemetryEvent != null){
-            if (predictions_enabled) {
+            if (anomalyDetectionEnabled) {
                 ScoringResult scoringResult= callAnomalyDetection(telemetryEvent.payload);
                 int prediction = (int)scoringResult.getPredictions()[0].values[0][0];
                 LOG.info("This is the prediction: " + prediction);
@@ -159,7 +163,7 @@ public class TelemetryAssessor {
                 LOG.info("Reefer Anomaly Event object sent: " + cae.toString());
 
                 // This message will be sent on, create a new message which acknowledges the incoming message when it is acked
-                telEmitter.send(new KeyValue<String,ReeferEvent>(key, cae));
+                reeferEventEmitter.send(cae);
             }
         }
     }
@@ -173,10 +177,10 @@ public class TelemetryAssessor {
         this.maxCount = maxCount;
     }
 
-    // public ScoringResult callAnomalyDetection(Telemetry telemetry) {
-    //     // todo compute last temperature diff
-    //     ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
-    //     ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
-    //     return scoringService.assessTelemetry(wrapper);
-    // }
+    public ScoringResult callAnomalyDetection(Telemetry telemetry) {
+         // todo compute last temperature diff
+         ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
+         ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
+         return scoringService.assessTelemetry(wrapper);
+     }
 }

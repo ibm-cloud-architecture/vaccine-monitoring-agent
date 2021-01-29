@@ -12,8 +12,10 @@ import org.apache.kafka.streams.TestInputTopic;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.TopologyTestDriver;
 import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -28,20 +30,19 @@ import io.quarkus.kafka.client.serialization.JsonbSerde;
 
 //@QuarkusTest
 // @QuarkusTestResource(KafkaResource.class)
-public class TelemetryColdChainTest {
+public class TelemetryColdChainValidation {
 
     private static TopologyTestDriver testDriver;
 
-    private TestInputTopic<String, TelemetryEvent> inputTopic;
+    private static TestInputTopic<String, TelemetryEvent> inputTopic;
 
-    private Serde<String> stringSerde = Serdes.String();
-    private double temperatureThreshold = 0.0;
-    private String telemetryTopic = "telemetries";
-    private int maxCount = 5;
+    private static double temperatureThreshold = 0.0;
+    private static String telemetryTopic = "telemetries";
+    private static int maxCount = 5;
    
-    private JsonbSerde<TelemetryEvent> telemetrySerde = new JsonbSerde<>(TelemetryEvent.class);
+    private static JsonbSerde<TelemetryEvent> telemetrySerde = new JsonbSerde<>(TelemetryEvent.class);
     
-    private  Properties getStreamsConfig() {
+    private  static Properties getStreamsConfig() {
         final Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "telemetry-tester");
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -53,8 +54,9 @@ public class TelemetryColdChainTest {
     /**
      * process item sale events, and aggregate per key
      */
-    @BeforeEach
-    public void setup() {
+    @BeforeAll
+    public static void setup() {
+        
         // as no CDI is used set the topic names
         TelemetryAssessor telemetryAssessor = new TelemetryAssessor(temperatureThreshold, telemetryTopic, maxCount);
         telemetryAssessor.telemetryTopicName = telemetryTopic;
@@ -62,15 +64,16 @@ public class TelemetryColdChainTest {
         Topology topology = telemetryAssessor.buildTopology();
         testDriver = new TopologyTestDriver(topology, getStreamsConfig());
         inputTopic = testDriver.createInputTopic(telemetryTopic, 
-                                stringSerde.serializer(),
+        Serdes.String().serializer(),
                                 telemetrySerde.serializer());
         
     }
 
-    @AfterEach
-    public void tearDown() {
+    @AfterAll
+    public static void tearDown() {
         try {
             testDriver.close();
+            telemetrySerde.close();
         } catch (final Exception e) {
              System.out.println("Ignoring exception, test failing due this exception:" + e.getLocalizedMessage());
         } 
@@ -89,7 +92,8 @@ public class TelemetryColdChainTest {
     public void shouldHaveTemperaturesGrowButGoDownAgain(){
         ReadOnlyKeyValueStore<String,ReeferAggregate> storage = testDriver.getKeyValueStore(TelemetryAssessor.REEFER_AGGREGATE_TABLE);
         String reeferID = "contId-1234";
-        TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,this.temperatureThreshold+ 1.0);
+        TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold+ 1.0);
+        System.out.println(inputTopic);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
@@ -99,7 +103,8 @@ public class TelemetryColdChainTest {
         Assertions.assertEquals(1, reeferAggregate.getTemperatureList().size());
 
         // sending another event with temperature greater than max temperature
-        telemetryEvent = generateTelemetryEventForKey(reeferID,this.temperatureThreshold+ 5);
+        telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold+ 5);
+        System.out.println(telemetryEvent);
         // send message to topic
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
@@ -111,6 +116,7 @@ public class TelemetryColdChainTest {
         // generate event with temperature lesser than max temperature
         telemetryEvent = generateTelemetryEventForKey(reeferID,temperatureThreshold-1.0);
         // send message to topic
+       
         inputTopic.pipeInput(telemetryEvent);
         // get data from ktable
         reeferAggregate = storage.get(reeferID);
@@ -135,10 +141,11 @@ public class TelemetryColdChainTest {
     public void shouldHaveTooManyViolations() {
         ReadOnlyKeyValueStore<String,ReeferAggregate> storage = testDriver.getKeyValueStore(TelemetryAssessor.REEFER_AGGREGATE_TABLE);
         String reeferID = "contId-1234";
+        System.out.println(inputTopic);
         // send max maxCount event with temperature greater than maxtemperatureThreshold
         ReeferAggregate reeferAggregate;
-        for (int i=1; i < this.maxCount + 1; i++){
-            double temp = this.temperatureThreshold + i;
+        for (int i=1; i < maxCount + 1; i++){
+            double temp = temperatureThreshold + i;
             TelemetryEvent telemetryEvent = generateTelemetryEventForKey(reeferID,temp);
             // send message to topic
             inputTopic.pipeInput(telemetryEvent);

@@ -63,7 +63,7 @@ public class TelemetryAssessor {
 
     public @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
 
-
+ 
     @Inject
     @RestClient
     ScoringService scoringService;

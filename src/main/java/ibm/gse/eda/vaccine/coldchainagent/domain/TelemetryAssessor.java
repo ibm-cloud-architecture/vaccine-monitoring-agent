@@ -1,7 +1,6 @@
 package ibm.gse.eda.vaccine.coldchainagent.domain;
 
-import java.time.LocalDate;
-import java.util.Random;
+import java.time.LocalDateTime;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.inject.Produces;
@@ -22,16 +21,15 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.reactive.messaging.Channel;
 import org.eclipse.microprofile.reactive.messaging.Emitter;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAggregateSerde;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.WMLScoringClient;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 
 /**
@@ -64,9 +62,7 @@ public class TelemetryAssessor {
     public @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
 
 
-    @Inject
-    @RestClient
-    ScoringService scoringService;
+    WMLScoringClient scoringService = new WMLScoringClient();
 
     public int count;
     private boolean anomalyFound = false;
@@ -131,31 +127,30 @@ public class TelemetryAssessor {
         .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
                 LOG.info("Violated " + v.toString());
                 LOG.info("Send Notification **************->>> or message to reefer topic. ");
-                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDate.now(),v));
+                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDateTime.now(),v));
         });
         return builder.build();
     }
 
 
     private void anomalyDetector(String key, TelemetryEvent telemetryEvent){
+        anomalyFound = false;
         if (telemetryEvent != null){
             if (anomalyDetectionEnabled) {
                 ScoringResult scoringResult= callAnomalyDetection(telemetryEvent.payload);
-                int prediction = (int)scoringResult.getPredictions()[0].values[0][0];
-                LOG.info("This is the prediction: " + prediction);
-                LOG.info("with a probability: " + "[" + scoringResult.getPredictions()[0].values[0][1] + "," + scoringResult.getPredictions()[0].values[0][1] + "]");
-                // Is there anomaly?
-                anomalyFound = ( prediction == 0 );
-            }
-            else {
-                // Mockup the prediction
-                int number = new Random().nextInt(10);
-                if (number > 6) anomalyFound = true;
+                if (scoringResult != null) {
+                    int prediction = (int)scoringResult.getPredictions()[0].values[0][0];
+                    LOG.info("This is the prediction: " + prediction);
+                    LOG.info("with a probability: " + "[" + scoringResult.getPredictions()[0].values[0][1] + "," + scoringResult.getPredictions()[0].values[0][1] + "]");
+                    // Is there anomaly?
+                    anomalyFound = ( prediction == 0 );
+                }
+               
             }
 
             if (anomalyFound)
             {
-                LOG.info("A reefer anomaly has been predicted. Therefore, sending a ReeferAnomaly Event to the appropriate topic");
+                LOG.info("A reefer anomaly has been predicted. Therefore, sending a ReeferAnomaly Event to the reefer topic " + telemetryEvent.toString());
                 ReeferEvent cae = new ReeferEvent(
                             telemetryEvent.containerID,
                             telemetryEvent.timestamp,

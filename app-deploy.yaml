@@ -72,6 +72,7 @@ spec:
         key: reefer-topic
         name: agent-cm
   - name: TELEMETRY_TOPIC
+    valueFrom:
       configMapKeyRef:
         key: telemetry-topic
         name: agent-cm
@@ -81,7 +82,7 @@ spec:
     valueFrom:
       secretKeyRef:
         key: ca.password
-        name: eda-dev-cluster-ca-cert
+        name: kakfa-cluster-ca-cert
   - name: USER_CERT_PATH
     value: /deployments/certs/user.p12
   - name: USER_CERT_PWD
@@ -127,7 +128,7 @@ spec:
   volumes:
   - name: es-cert
     secret:
-      secretName: eda-dev-cluster-ca-cert
+      secretName: kafka-cluster-ca-cert
   - name: user-cert
     secret:
       secretName: app-scram

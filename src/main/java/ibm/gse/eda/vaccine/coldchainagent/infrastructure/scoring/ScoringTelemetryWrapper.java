@@ -7,7 +7,7 @@ package ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring;
  */
 public class ScoringTelemetryWrapper {
 
-    ScoringTelemetry[] input_data = new ScoringTelemetry[1];
+    public ScoringTelemetry[] input_data = new ScoringTelemetry[1];
 
     public ScoringTelemetryWrapper() {}
     
@@ -15,11 +15,5 @@ public class ScoringTelemetryWrapper {
     	input_data[0] = sc;
     }
 
-	public ScoringTelemetry[] getInputData() {
-		return input_data;
-	}
-
-	public void setInputData(ScoringTelemetry[] input) {
-		this.input_data = input;
-	}
+	
 }

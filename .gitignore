@@ -4,7 +4,6 @@ certs/es-cert.p12
 certs/truststore.p12
 scripts/setenv.sh
 scripts/appsody.env
-src/main/kubernetes/configmap.yaml
 target/
 .classpath
 .classpath

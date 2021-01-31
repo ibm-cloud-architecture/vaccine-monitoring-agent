@@ -2,6 +2,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "type": "java",
+            "name": "Launch ValidateWMLCall",
+            "request": "launch",
+            "mainClass": "ibm.gse.eda.vaccine.coldchainagent.test.ValidateWMLCall",
+            "projectName": "vaccine-monitoring-agent"
+        },
+        {
             "name": "Appsody: Attach java debugger",
             "type": "java",
             "request": "attach",

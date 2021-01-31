@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import ibm.gse.eda.vaccine.coldchainagent.domain.ReeferAggregate;
-import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
 
 public class TestReeferAggregate {
     

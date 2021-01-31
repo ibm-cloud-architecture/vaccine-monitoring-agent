@@ -21,6 +21,10 @@ public interface ScoringService {
     @ClientHeaderParam(name = "Authorization", value="{ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringService.generateHeader}")
     public ScoringResult assessTelemetry(ScoringTelemetryWrapper telemetry); 
 
+    /**
+     * WML_TOKEN
+     * @return
+     */
     public static String generateHeader(){
         return "Bearer " + wml_token;
     }

@@ -16,13 +16,14 @@ The component interacts with other components as highlighted in the figure below
 ## Pre-requisites
 
 * JDK 11 or later is installed.
-* Apache Maven 3.6.2 or later is installed.
-* Appsody CLI (tested on 0.6.4)
-* Access to an Openshift Cluster 4.4
-* Event Streams installed or Strimzi operator deployed with a vanilla kafka 2.5 cluster
-* A kafka user exists with administration role. (See [Event Streams documentation](https://ibm.github.io/event-streams/security/managing-access/#assigning-access-to-applications) for that)
+* Apache Maven 3.6.2 or later is installed
+* Access to an OpenShift Cluster 4.4
+* Event Streams installed or Strimzi operator deployed with a vanilla kKafka 2.6 cluster
+* A kKafka user exists with administration role. (See [Event Streams documentation](https://ibm.github.io/event-streams/security/managing-access/#assigning-access-to-applications) for that)
 
 ## Running locally
+
+**THIS WAS CHANGED THE LAST THREE DAYS 01/30/21. So not working yet**
 
 As it is quite simple to connect to Event Streams running on OpenShift cluster, we are using the settings to run the quarkus app in dev mode, but remotely connected to Event Streams.
 
@@ -40,19 +41,27 @@ Enter a number> 1
 
 Get the `Event Streams bootstrap address`.
 
-* Define the KAFKA_BROKERS env variable in `scripts/appsody.env` from the bootstrap address retrieved before.
-
-* Select one of the kafka users defined
+* Define the the following environment variables in `.env`
 
 ```shell
-oc get kafkausers -n eventstreams
+export POD_IP=localhost
+export CP4D_USER=<user cloud pak for data>
+export CP4D_APIKEY=<api key for cloud pak for data>
+export CP4D_AUTH_URL=<url of cloud pak for data>/icp4d-api/v1/authorize
+export ANOMALY_DETECTION_URL=<>
+
+export KAFKA_USER=<kafka scram user>
+export KAFKA_PASSWORD=<kafka user password>
+export KAFKA_BOOTSTRAP_SERVERS=eda-dev-kafka-bootstrap-eventstreams.gse-eda-2021-1-0143c5dd31acd8e030a1d6e0ab1380e3-0000.us-east.containers.appdomain.cloud:443
+export KAFKA_SSL_TRUSTSTORE_LOCATION=${PWD}/certs/es-cert.p12
+export KAFKA_SSL_TRUSTSTORE_PASSWORD=<>
+export TELEMETRY_TOPIC=coldchain-telemetries
+export REEFER_TOPIC=coldchain-reefers
+export PREDICTION_ENABLED=False
+export EDA_LOGGING_LEVEL=INFO
+export KAFKA_SASL_MECHANISM=
 ```
 
-* Define the KAFKA_USER variable (in scripts/appsody.env) with one of the user and KAFKA_PASSWORD with the user's password extracted from his secret:
-
-```
-oc get secret <username> --namespace eventstreams -o jsonpath='{.data.password}' | base64 --decode
-```
 
 * Then get the TLS certificate with the command:
 
@@ -65,14 +74,6 @@ mv es-cert.p12 certs
 
 The cluster public certificate is required for all external connections and is available to download from the Cluster connection panel under the Certificates heading. Upon downloading the PKCS12 certificate, the certificate password will also be displayed.
 
-Modify KAFKA_CERT_PWD in the `scripts/appsody.env` file.
-
-* Start appsody run with the environment variables, so the quarkus kafka app is remotely connected to Event Streams.
-
-```shell
-appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/deployment/certs"
-```
-
 ## Deploy to OpenShift
 
 * Build and push the image to private or public registry.
@@ -80,167 +81,7 @@ appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/
 ```shell
 # if not logged yes to your openshift cluster where the docker private registry resides do:
 oc login --token=... --server=https://c...
-# Get the route to reach the docker private registry
-oc get route --all-namespaces | grep registry
-# Define the path as environment variable
-export IMAGE_REGISTRY=default-route-openshift-image-registry.gse-eda-demo-202005-fa9ee67c9ab6a7791435450358e564cc-0000.us-south.containers.appdomain.cloud
-# log to the docker registry using the security token from the openshift console
-docker login $IMAGE_REGISTRY
-# Then build and push the image
-appsody build -t vaccine-solution/vaccine-monitoring-agent:0.0.1 [--push-url $IMAGE_REGISTRY] [--push]
- appsody build -t ibmcase/vaccine-monitoring-agent:0.0.1 --push
-```
-
-* Select one of the kafka users defined or create a new one with the produce, consume messages and create topic and schemas authorizations, on all topics or topic with a specific prefix, on all consumer groups or again with a specific prefix, all transaction IDs.
-
-```shell
-oc get kafkausers -n eventstreams
-```
-
-Get username and then to get the password do the following:
-
-```shell
-oc get secret <username>  -o jsonpath='{.data.password}' | base64 --decode
-```
-
-Modify the KAFKA_USER and KAFKA_PASSWORD variables in the `scripts/appsody.env` file.
-
-* Copy user's secret
-
-```
-oc get secret jesus -n eventstreams --export -o yaml | oc apply -n vaccine-solution -f -
-```
-* Define config map for Kafka broker URL and user
-
-<<<<<<< HEAD
-```
-oc apply -f src/main/kubernetes/configmap.yaml
-```
-
-
-* Get TLS certificates
-
-```
-mv es-cert.p12 certs
-```
-
-=======
->>>>>>> 9a211a8d3201070064fdce9fa89129a03ad681a2
-The cluster Truststore certificate is required for all external connections and is available to download from the Cluster connection panel under the Certificates heading. Upon downloading the PKCS12 certificate, the certificate password will also be displayed.
-
-Modify KAFKA_CERT_PWD in the `scripts/appsody.env` file.
-
-* Remove the "%prod." in the application.properties for the kafka settings. These were set to run with Kafka running with docker compose, but when remote connected to Event Streams we need those settings.
-
-* Start the app with appsody using the environment variables and SSL certificate
-
-```shell
-appsody run --docker-options "--env-file ./scripts/appsody.env -v $(pwd)/certs:/deployment/certs"
-```
-
-## Running on OpenShift with Event Streams co-located in same cluster
-
-To run on OpenShift, you will need to inject the address of your Kafka settings into your Quarkus application via the environment variables and mount points. The `app-deploy.yaml` file contains declarations to inject the required information at runtime.
-
-There are multiple required configuration elements for connectivity to IBM Event Streams (Kafka) prior to deployment:
-  - A KafkaUser with TLS-based authentication credentials
-  - A `ConfigMap` named `agent-cm` containing the following key-value pairs:
-    -  `kafka-brokers`
-    -  `reefer-topic`
-    -  `telemetry-topic` - _(this topic should match the output topic of the [vaccine-reefer-simulator](https://github.com/ibm-cloud-architecture/vaccine-reefer-simulator))_
-  - A `Secret` copied from the `eventstreams` namespace containing the KafkaUser's TLS credentials
-  - A `Secret` copied from the `eventstreams` namespace containing the Event Streams' clusters certificates
-
-### Create a TLS User
-
-* Create a TLS user for the internal bootstrap endpoint of the Event Streams instance via the **"Connect to this cluster"** dialog in the Event Streams console.
-
-* Validate the user is created and available via the OpenShift CLI
-```shell
-oc get kafkausers -n eventstreams
-# we will use kafka-tls-user as it is a TLS user.
-kafka-scram-user                         scram-sha-512    simple
-kafka-tls-user                           tls              simple
-```
-
-<<<<<<< HEAD
-* Get bootstrap URL. The output of the command `cloudctl es init` returns the external URL, but as we need the internal bootstrap URL. To get it we use the OpenShift console and the Installed Operators > ibm-eventstreams... > EventStreams Defaults for the instance we want to connect. In the YAML view we get the kafkaListeners:
-=======
-### Get Cluster bootstrap URL
->>>>>>> 9a211a8d3201070064fdce9fa89129a03ad681a2
-
-* Get the cluster's bootstrap URL via the **"Connect to this cluster"** dialog in the Event Streams console. It is in the format of `{cluster-name}-bootstrap.eventstreams.svc:9093` with `{cluster-name}` being replaced with the actual name of your Event Streams cluster.
-
-### Create ConfigMap
-
-A sample configuration command for `agent-cm` ConfigMap is included below:
-
-```
-oc create configmap agent-cm \
---from-literal=kafka-brokers={cluster-name}-kafka-bootstrap.eventstreams.svc:9093 \
---from-literal=reefer-topic=vaccine-reefers \
---from-literal=telemetries-topic=vaccine-reefer-telemetries
---from-literal=consumer-group=cold-chain-agent
-```
-
-Replace the values for `kafka-brokers`, `reefer-topic`, and `telemetry-topic` to the values that match your environment. Update the value of `consumer-group` to provide a unique identifier or suffix for your application instance if you will be deploying this component in a shared environment.
-
-### Copy Event Streams credentials
-
-* Copy the user's TLS credentials from the Event Streams project to the target project:
-
-```shell
-oc get secret {kafka-user} -n eventstreams --export -o yaml | oc apply -n {target-namespace} -f -
-```
-
-* Copy the Kafka cluster's public certificate from the Event Streams project to the target project _(This certificate includes a ca.pa12 entry and a truststore password which will be used in the deployment manifest.)_:
-
-```shell
-oc get secret {cluster-name}-cluster-ca-cert -n eventstreams --export -o yaml | oc apply -n {target-namespace} -f -
-```
-
-### Update app-deploy.yaml
-
-Sections of the `app-deploy.yaml` need to be updated to correspond to your locally copied Secrets from the `eventstreams` namespace.
-
-* Modify the **name** of the Secrets referenced for the environment variables declarations in `app-deploy.yaml`:
-
-```yaml
-- name: KAFKA_CERT_PWD
-  valueFrom:
-    secretKeyRef:
-      key: ca.password
-      name: {cluster-name}-cluster-ca-cert
-...
-- name: USER_CERT_PWD
-  valueFrom:
-    secretKeyRef:
-      key: user.password
-      name: {kafka-user}
-```
-
-* Modify the **secretName** of the Secrets referenced in the `volumes` declaration of the `app-deploy.yaml`.
-
-```yaml
-volumes:
-- name: es-cert
-  secret:
-    secretName: {cluster-name}-cluster-ca-cert
-- name: user-cert
-  secret:
-    secretName: {kafka-user}
-```
-
-### Deploy the Appsody application
-
-```shell
-appsody deploy -t ibmcase/reefer-monitoring-agent:latest --no-build --namespace {target-namespace}
-```
-
-If you want to remove the deployment:
-
-```shell
-oc delete app-deploy.yaml
+mvn clean package  -Dquarkus.kubernetes.deploy=true -DskipTests
 ```
 
 

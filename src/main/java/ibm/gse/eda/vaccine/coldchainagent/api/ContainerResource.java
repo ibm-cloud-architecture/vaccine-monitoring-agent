@@ -29,31 +29,7 @@ import ibm.gse.eda.vaccine.coldchainagent.domain.interactivequery.PipelineMetada
 @ApplicationScoped
 public class ContainerResource {
     private final Client client = ClientBuilder.newBuilder().build();
-    // @GET
-    // @Path("/{reeferID}")
-    // public ContainerTracker getContainer(@PathParam("reeferID") final String
-    // reeferID) {
-    // final StoreQueryParameters<ReadOnlyKeyValueStore<String,ContainerTracker>>
-    // parameters =
-    // StoreQueryParameters.fromNameAndType(TelemetryAssessor.CONTAINER_TABLE,QueryableStoreTypes.keyValueStore());
-    // return streams.store(parameters).get(reeferID);
-    // }
-
-    // @GET
-    // public ArrayList<Returntype> getktable() {
-    // final StoreQueryParameters<ReadOnlyKeyValueStore<String,ContainerTracker>>
-    // parameters =
-    // StoreQueryParameters.fromNameAndType(TelemetryAssessor.CONTAINER_TABLE,QueryableStoreTypes.keyValueStore());
-    // final KeyValueIterator<String, ContainerTracker> val =
-    // streams.store(parameters).all();
-    // final ArrayList<Returntype> returnList= new ArrayList<Returntype>();
-    // while (val.hasNext()){
-    // final KeyValue<String, ContainerTracker> keypair = val.next();
-    // returnList.add(new Returntype(keypair.key, keypair.value));
-    // }
-    // return returnList;
-    // }
-
+   
     @Inject
     ContainerTrackerInteractiveQueries interactiveQueries;
 

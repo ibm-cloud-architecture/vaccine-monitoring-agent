@@ -8,7 +8,6 @@ import javax.inject.Singleton;
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import javax.json.JsonValue;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
 import javax.net.ssl.SSLContext;
@@ -60,7 +59,6 @@ public class WMLScoringClient {
                 this.api_key = ConfigProvider.getConfig().getValue("cp4d.api_key",String.class);
             if (this.predictionURL == null)
                 this.predictionURL = ConfigProvider.getConfig().getValue("anomalydetection.scoring.url",String.class);
-            LOG.info("username= " + this.username);
                
             sslcontext = SSLContext.getInstance("TLS");
             sslcontext.init(null, new TrustManager[]{new X509TrustManager() {

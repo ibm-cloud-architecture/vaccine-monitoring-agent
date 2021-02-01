@@ -57,64 +57,7 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: reefer-monitoring-agent
----
-apiVersion: image.openshift.io/v1
-kind: ImageStream
-metadata:
-  name: openjdk-11
-spec:
-  dockerImageRepository: registry.access.redhat.com/ubi8/openjdk-11
----
-apiVersion: image.openshift.io/v1
-kind: ImageStream
-metadata:
-  annotations:
-    prometheus.io/scheme: http
-    app.openshift.io/vcs-url: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent.git
-    app.quarkus.io/commit-id: fc855dfefc2babb80cee8c9292450da4fd9fa551
-    app.quarkus.io/vcs-url: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent.git
-    app.quarkus.io/build-timestamp: 2021-02-01 - 01:11:20 +0000
-    prometheus.io/scrape: "true"
-    prometheus.io/path: /metrics
-    prometheus.io/port: "8080"
-  labels:
-    app: reefer-monitoring-agent
-    app.openshift.io/runtime: quarkus
-    app.kubernetes.io/name: reefer-monitoring-agent
-    app.kubernetes.io/version: 1.0.1
-  name: reefer-monitoring-agent
-spec: {}
----
-apiVersion: build.openshift.io/v1
-kind: BuildConfig
-metadata:
-  annotations:
-    prometheus.io/scheme: http
-    app.openshift.io/vcs-url: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent.git
-    app.quarkus.io/commit-id: fc855dfefc2babb80cee8c9292450da4fd9fa551
-    app.quarkus.io/vcs-url: https://github.com/ibm-cloud-architecture/vaccine-monitoring-agent.git
-    app.quarkus.io/build-timestamp: 2021-02-01 - 01:11:20 +0000
-    prometheus.io/scrape: "true"
-    prometheus.io/path: /metrics
-    prometheus.io/port: "8080"
-  labels:
-    app: reefer-monitoring-agent
-    app.openshift.io/runtime: quarkus
-    app.kubernetes.io/name: reefer-monitoring-agent
-    app.kubernetes.io/version: 1.0.1
-  name: reefer-monitoring-agent
-spec:
-  output:
-    to:
-      kind: ImageStreamTag
-      name: reefer-monitoring-agent:1.0.1
-  source:
-    binary: {}
-  strategy:
-    sourceStrategy:
-      from:
-        kind: ImageStreamTag
-        name: openjdk-11:latest
+
 ---
 apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
@@ -198,7 +141,7 @@ spec:
             name: agent-secrets
         - configMapRef:
             name: agent-cm
-        image: image-registry.openshift-image-registry.svc:5000/ibmcase/reefer-monitoring-agent:1.0.1
+        image: ibmcase/reefer-monitoring-agent
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

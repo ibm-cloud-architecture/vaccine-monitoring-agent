@@ -58,9 +58,10 @@ jobs:
       env:
         DEFAULT_BUMP: patch
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Install Appsody CLI
-      id: install-appsody-cli
-      uses: ibm-cloud-architecture/appsody-install-action@master
+    - name: Set up JDK 11
+      uses: actions/setup-java@v1
+      with:
+        java-version: 11
     - name: Build the app docker image
       id: build-container-image
       run: |
@@ -69,7 +70,8 @@ jobs:
 
         echo "Build and push the docker image $IMAGE_NAME"
         cd ${WORKDIR}
-        appsody build -v --tag ${IMAGE_NAME}:${IMAGE_TAG} --push
+        mvn package -DskipTests
+        docker build -f ${DOCKERFILE} -t ${IMAGE_NAME}:${IMAGE_TAG} . 
         docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
         docker push ${IMAGE_NAME}
       env:
@@ -78,5 +80,5 @@ jobs:
         DOCKER_R: ${{ secrets.DOCKER_REPOSITORY }}
         DOCKER_I: ${{ secrets.DOCKER_IMAGE_NAME }}
         WORKDIR: .
-        DOCKERFILE: Dockerfile
+        DOCKERFILE: src/main/docker/Dockerfile.jvm
         IMAGE_TAG: ${{ steps.bump-version-action.outputs.new_tag }}

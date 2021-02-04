@@ -1,4 +1,4 @@
-package ibm.gse.eda.vaccine.coldchainagent.test;
+package ibm.gse.eda.vaccine.coldchainagent.ut;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -21,6 +21,5 @@ public class TestLocalDate {
         assertEquals(t.getHour(), 16);
         assertEquals(t.getDayOfMonth(), 25);
         System.out.println(t.toString());
-        //LocalDate d = LocalDate.
     }
 }

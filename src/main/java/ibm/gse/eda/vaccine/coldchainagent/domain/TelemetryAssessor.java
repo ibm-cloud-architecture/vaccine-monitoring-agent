@@ -114,7 +114,7 @@ public class TelemetryAssessor {
         // create table with store as containerTable
         KTable<String, ReeferAggregate> reeferAggregateTable = telemetryGroup.aggregate(
             () -> new ReeferAggregate(maxCount,temperatureThreshold),
-            (k, newTelemetry, currentAggregate) -> currentAggregate.update(k,newTelemetry.payload.temperature),
+            (k, newTelemetry, currentAggregate) -> currentAggregate.updateTemperature(newTelemetry.payload.temperature),
             Materialized.<String, ReeferAggregate, KeyValueStore<Bytes, byte[]>>as(REEFER_AGGREGATE_TABLE)
             .withKeySerde(Serdes.String())
             .withValueSerde(reeferAggregateSerde)
@@ -127,7 +127,7 @@ public class TelemetryAssessor {
         .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
                 LOG.info("Violated " + v.toString());
                 LOG.info("Send Notification **************->>> or message to reefer topic. ");
-                reeferEventEmitter.send(new ReeferEvent(v.getReeferID(),LocalDateTime.now(),v));
+                reeferEventEmitter.send(new ReeferEvent(k,LocalDateTime.now(),v));
         });
         return builder.build();
     }

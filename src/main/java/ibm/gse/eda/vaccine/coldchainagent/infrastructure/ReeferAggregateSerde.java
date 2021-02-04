@@ -4,13 +4,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 
-import javax.json.JsonArray;
-import javax.json.JsonObject;
 import javax.json.bind.Jsonb;
 import javax.json.bind.JsonbBuilder;
-import javax.json.bind.JsonbConfig;
 
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serde;
@@ -44,10 +40,10 @@ public class ReeferAggregateSerde implements Serde<ReeferAggregate> {
         serializer.close();
         deserializer.close();
     }
-    
-    private class ReeferAggregateSerializer extends JsonbSerializer<ReeferAggregate>  {
+
+    private class ReeferAggregateSerializer extends JsonbSerializer<ReeferAggregate> {
         private final Jsonb jsonb = JsonbBuilder.create();
-       
+
         @Override
         public byte[] serialize(String topic, ReeferAggregate data) {
             try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -60,11 +56,10 @@ public class ReeferAggregateSerde implements Serde<ReeferAggregate> {
     }
 
     private class ReeferAggregateDeserializer extends JsonbDeserializer<ReeferAggregate> {
-        private final Jsonb jsonb;
+        private final Jsonb jsonb = JsonbBuilder.create();
 
         public ReeferAggregateDeserializer() {
             super(ReeferAggregate.class);
-            jsonb = JsonbBuilder.create();
         }
 
         @Override
@@ -73,33 +68,15 @@ public class ReeferAggregateSerde implements Serde<ReeferAggregate> {
                 return null;
             }
 
-            // THIS IS HORRIBLE... need to think of a better way to do that
             try (InputStream is = new ByteArrayInputStream(data)) {
-                ReeferAggregate result = new ReeferAggregate();
-                JsonObject asJson = jsonb.fromJson(is, JsonObject.class);
-                result.setReeferID(asJson.getString("reeferID"));
-                result.maxTemperature = asJson.getInt("maxTemperature");
-                try {
-                    result.tooManyViolations = asJson.getBoolean("tooManyViolations");
-                    result.alreadyReportedColdChainViolation = asJson.getBoolean("alreadyReportedColdChainViolation");
-                } catch (Exception e) {
-                    // not present... really?
-                }
-                
-                result.maxViolationAllowed = asJson.getInt("maxViolationAllowed");
-                result.setViolatedTemperatureCount(asJson.getInt("violatedTemperatureCount"));
-                JsonArray tValues = asJson.getJsonArray("temperatureList");
-                tValues.forEach( (t) -> 
-                        result.getTemperatureList().add(Double.parseDouble(t.toString()))
-                );
-                return result;
-            
-               } catch (IOException e) {
+                ReeferAggregate reeferAggregate = jsonb.fromJson(is, ReeferAggregate.class);
+                return reeferAggregate;
+
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
 
     }
 
-  
 }

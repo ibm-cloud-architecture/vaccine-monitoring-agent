@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.junit.jupiter.Container;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
@@ -13,7 +12,7 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager
 {
 
     @Container
-    private final GenericContainer<?> kafka = new GenericContainer("strimzi/kafka:latest-kafka-2.5.0").withExposedPorts(9092);
+    private final GenericContainer<?> kafka = new GenericContainer("strimzi/kafka:latest-kafka-2.6.0").withExposedPorts(9092);
 
     @Override
     public Map<String, String> start() {

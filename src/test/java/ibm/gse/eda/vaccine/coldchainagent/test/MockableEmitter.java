@@ -7,6 +7,7 @@ import javax.json.bind.JsonbBuilder;
 
 import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
+import org.jboss.resteasy.plugins.providers.CompletionStageProvider;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
 

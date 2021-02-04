@@ -1,4 +1,4 @@
-package ibm.gse.eda.vaccine.coldchainagent.test;
+package ibm.gse.eda.vaccine.coldchainagent.ut;
 
 import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
@@ -11,16 +11,19 @@ public class TestDeserialization {
     @Test
     public void shouldHaveList(){
         ReeferAggregate a = new ReeferAggregate();
-        a.setReeferID("test-id");
-        a.getTemperatureList().add(new Double(10));
-        a.getTemperatureList().add(new Double(11));
+        a.getTemperatureList().add(Double.valueOf(10));
+        a.getTemperatureList().add(Double.valueOf(11));
         Assertions.assertEquals(2,a.getTemperatureList().size());
 
         ReeferAggregateSerde serde = new ReeferAggregateSerde();
-        byte[] s = serde.serializer().serialize("", a);
-        ReeferAggregate b = serde.deserializer().deserialize("",s);
+        byte[] s = serde.serializer().serialize("topicname", a);
+        ReeferAggregate b = serde.deserializer().deserialize("topicname",s);
 
         Assertions.assertEquals(2,b.getTemperatureList().size());
+        Assertions.assertEquals(4,b.maxViolationAllowed);
+        Assertions.assertEquals(25,b.maxRecordToKeep);
+        Assertions.assertEquals(0,b.maxTemperature);
+        System.out.println(b.toString());
         serde.close();
     }
 }

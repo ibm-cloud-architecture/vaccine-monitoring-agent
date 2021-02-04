@@ -1,13 +1,11 @@
-package ibm.gse.eda.vaccine.coldchainagent.test;
+package ibm.gse.eda.vaccine.coldchainagent.it;
 
-import java.io.*;
-import java.net.MalformedURLException;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 public class ValidateWMLCall {
     public static void main(String[] args) throws IOException {

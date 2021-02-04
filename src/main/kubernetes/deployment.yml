@@ -144,7 +144,7 @@ spec:
         - secretRef:
             name: agent-secrets
         image: ibmcase/reefer-monitoring-agent
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 3
           httpGet:

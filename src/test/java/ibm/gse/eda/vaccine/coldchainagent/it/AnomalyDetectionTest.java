@@ -1,11 +1,9 @@
-package ibm.gse.eda.vaccine.coldchainagent.test;
+package ibm.gse.eda.vaccine.coldchainagent.it;
 
-import com.google.inject.Inject;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
-import ibm.gse.eda.vaccine.coldchainagent.domain.TelemetryAssessor;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetryWrapper;

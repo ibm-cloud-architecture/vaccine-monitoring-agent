@@ -6,10 +6,8 @@ scripts/setenv.sh
 scripts/appsody.env
 target/
 .classpath
-.classpath
-.classpath
 .settings/org.eclipse.core.resources.prefs
 .vscode/settings.json
 .env
-./scripts/__pycache__/
+__pycache__
 src/main/kubernetes/secret.yaml

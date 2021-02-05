@@ -124,8 +124,6 @@ spec:
               fieldPath: status.podIP
         - name: USER_CERT_PATH
           value: /deployments/certs/user/user.p12
-        - name: TEMPERATURE_THRESHOLD
-          value: "-50.0"
         - name: USER_CERT_PWD
           valueFrom:
             secretKeyRef:

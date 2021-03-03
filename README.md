@@ -4,10 +4,11 @@ The main documentation for this project (the what, why, how) is part of the Vacc
 
 This project uses the following technologies to support consuming refrigerator or freezer IoT units and assess temperature / cold chain violation or / and sensor anomaly detection.
 
-* Event Streams on Cloud Pack for Integration
+It uses: 
+* A Kafka backbone (Strimzi) or Event Streams as part of Cloud Pack for Integration
 * Quarkus 1.11.0
-* Reactive Messaging
-* Kafka Streams, and Ktable with interactive queries
+* Microprofile Reactive Messaging
+* Kafka Streams, with KStream and Ktable and Interactive queries
 
 The component interacts with other components as highlighted in the figure below:
 
@@ -89,15 +90,12 @@ mvn clean package  -Dquarkus.kubernetes.deploy=true -DskipTests
 
 The project has a simple `docker-compose.yaml` which you can use to run a single-node Kafka cluster on your local machine. To start Kafka locally, run `docker-compose up`. This will start Kafka, Zookeeper, and also create a Docker network on your machine, which you can find the name of by running `docker network list`.
 
-To run the application using Appsody, use this command, substituting in the name of your Docker network:
-
-`$ appsody run --network network_name --docker-options "--env KAFKA_BROKERS=kafka:9092"`
-
-To shut down Kafka and Zookeeper afterwards, run `docker-compose down`.
-
 now you can goto http://localhost:8080/ktable/{containerId}
 or http://localhost:8080/ktable to view all ktable
 and see what is in ktable
+
+
+To shut down Kafka and Zookeeper afterwards, run `docker-compose down`.
 
 
 ### Running locally with multiple instance

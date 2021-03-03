@@ -1,16 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: agent-cm
+  name: reefer-monitoring-agent-cm
 data:
   # property-like keys; each key maps to a simple value
   QUARKUS_KAFKA_STREAMS_APPLICATION_ID: cold-chain-agent
+  KAFKA_BOOTSTRAP_SERVERS: eda-dev-kafka-bootstrap.eventstreams.svc:9093
   EDA_LOGGING_LEVEL: INFO
-  KAFKA_BOOTSTRAP_SERVERS: eda-dev-kafka-bootstrap.eventstreams.svc:9093 
-  TELEMETRY_TOPIC: telemetries
-  REEFER_TOPIC: vaccine-reefers
+  TELEMETRY_TOPIC: reefer.telemetries
+  REEFER_TOPIC: vaccine.reefers
   PREDICTION_ENABLED: "false"
-  KAFKA_SECURITY_PROTOCOL: SSL
   TEMPERATURE_THRESHOLD: "-30.0"
   TEMPERATURE_MAX_OCCURENCE_COUNT: "20"
   

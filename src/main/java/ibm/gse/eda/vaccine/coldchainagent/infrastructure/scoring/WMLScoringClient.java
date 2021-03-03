@@ -29,13 +29,13 @@ public class WMLScoringClient {
     protected static Logger LOG = Logger.getLogger(WMLScoringClient.class);
     private Client client;
     
-    @ConfigProperty(name="anomalydetection.scoring.url")
+    @ConfigProperty(name="anomalydetection.scoring.url",defaultValue = "")
     private String predictionURL;
-    @ConfigProperty(name = "cp4d.auth.url")
+    @ConfigProperty(name = "cp4d.auth.url",defaultValue = "")
     private String endPointURL;
-    @ConfigProperty(name = "cp4d.user")
+    @ConfigProperty(name = "cp4d.user",defaultValue = "")
     private String username;
-    @ConfigProperty(name = "cp4d.api_key")
+    @ConfigProperty(name = "cp4d.api.key",defaultValue = "")
     private String api_key;
     public String wml_token;
 
@@ -56,7 +56,7 @@ public class WMLScoringClient {
             if (this.username == null)
                 this.username = ConfigProvider.getConfig().getValue("cp4d.user",String.class);
             if (this.api_key == null)
-                this.api_key = ConfigProvider.getConfig().getValue("cp4d.api_key",String.class);
+                this.api_key = ConfigProvider.getConfig().getValue("cp4d.api.key",String.class);
             if (this.predictionURL == null)
                 this.predictionURL = ConfigProvider.getConfig().getValue("anomalydetection.scoring.url",String.class);
                

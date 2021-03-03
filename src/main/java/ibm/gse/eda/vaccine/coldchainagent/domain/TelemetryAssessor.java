@@ -106,7 +106,10 @@ public class TelemetryAssessor {
                 });
         // for each message call anomaly detector
         telemetryStream.peek(( k,telemetryEvent ) -> {
-             anomalyDetector(k, telemetryEvent);
+             if (anomalyDetectionEnabled) {
+                anomalyDetector(k, telemetryEvent);
+             }
+             
          });
 
         // group stream by key and serialized with key as string and value ad TelemetryEvent

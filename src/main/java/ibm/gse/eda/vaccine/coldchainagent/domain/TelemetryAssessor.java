@@ -24,7 +24,7 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.jboss.logging.Logger;
 
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAggregateSerde;
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAlert;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.TelemetryEvent;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringResult;
 import ibm.gse.eda.vaccine.coldchainagent.infrastructure.scoring.ScoringTelemetry;
@@ -35,8 +35,10 @@ import io.quarkus.kafka.client.serialization.ObjectMapperSerde;
 /**
  * A bean consuming telemetry events from the "telemetries" Kafka topic and
  * applying following logic: - count if the temperature is above a specific
- * threshold for n events then the cold chain is violated. - call external
- * anomaly detection scoring service
+ * threshold for n events then the cold chain is violated. Generate an alert events
+ * to a different topic
+ * This code may also call an external anomaly detection scoring service to assess for
+ * refrigerator anomaly detected from the different sensor telemetries
  */
 @ApplicationScoped
 public class TelemetryAssessor {
@@ -48,7 +50,7 @@ public class TelemetryAssessor {
     public double temperatureThreshold;
 
     @Inject
-    @ConfigProperty(name = "quarkus.kafka-streams.topics", defaultValue = "testTopic")
+    @ConfigProperty(name = "quarkus.kafka-streams.topics", defaultValue = "telemetries")
     public String telemetryTopicName;
 
     @Inject
@@ -59,10 +61,10 @@ public class TelemetryAssessor {
     @ConfigProperty(name = "prediction.enabled", defaultValue = "false")
     public boolean anomalyDetectionEnabled;
 
-    public @Inject @Channel("reefers") Emitter<ReeferEvent> reeferEventEmitter;
+    public @Inject @Channel("reeferAlerts") Emitter<ReeferAlert> reeferEventEmitter;
 
-
-    WMLScoringClient scoringService = new WMLScoringClient();
+    // Anomaly detection service
+    WMLScoringClient anomalyDetectionScoringService = new WMLScoringClient();
 
     public int count;
     private boolean anomalyFound = false;
@@ -89,13 +91,12 @@ public class TelemetryAssessor {
         ObjectMapperSerde<TelemetryEvent> telemetryEventSerde = new ObjectMapperSerde<>(
                 TelemetryEvent.class);
         ReeferAggregateSerde reeferAggregateSerde = new ReeferAggregateSerde();
-        // from original message create stream with key containerID and value as it is
-        // 1- steam from kafka topic streamTopic and deserialize with key as string and value ad TelemetryEvent
+        // telemetries message has containerID as key and value as telemetries
         KStream<String, TelemetryEvent> telemetryStream = builder.stream(telemetryTopicName,
                     Consumed.with(Serdes.String(),
                     telemetryEventSerde))
                 .peek((k, v) -> {
-                  LOG.debug(k + " -> " + v);
+                  LOG.info(k + " -> " + v);
                 })
                 .map((k, v) -> {
                     if (v.payload != null){
@@ -104,7 +105,7 @@ public class TelemetryAssessor {
                         return new KeyValue<String, TelemetryEvent>(v.containerID, null);
                     }
                 });
-        // for each message call anomaly detector
+        // for each message potentially call anomaly detector
         telemetryStream.peek(( k,telemetryEvent ) -> {
              if (anomalyDetectionEnabled) {
                 anomalyDetector(k, telemetryEvent);
@@ -112,7 +113,7 @@ public class TelemetryAssessor {
              
          });
 
-        // group stream by key and serialized with key as string and value ad TelemetryEvent
+        // group stream by key and serialized with key as string and value as TelemetryEvent
         KGroupedStream<String, TelemetryEvent> telemetryGroup = telemetryStream.groupByKey(Grouped.with(Serdes.String(), telemetryEventSerde));
         // create table with store as containerTable
         KTable<String, ReeferAggregate> reeferAggregateTable = telemetryGroup.aggregate(
@@ -130,7 +131,7 @@ public class TelemetryAssessor {
         .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
                 LOG.info("Violated " + v.toString());
                 LOG.info("Send Notification **************->>> or message to reefer topic. ");
-                reeferEventEmitter.send(new ReeferEvent(k,LocalDateTime.now(),v));
+                reeferEventEmitter.send(new ReeferAlert(k,LocalDateTime.now(),v));
         });
         return builder.build();
     }
@@ -154,7 +155,7 @@ public class TelemetryAssessor {
             if (anomalyFound)
             {
                 LOG.info("A reefer anomaly has been predicted. Therefore, sending a ReeferAnomaly Event to the reefer topic " + telemetryEvent.toString());
-                ReeferEvent cae = new ReeferEvent(
+                ReeferAlert cae = new ReeferAlert(
                             telemetryEvent.containerID,
                             telemetryEvent.timestamp,
                             telemetryEvent.payload);
@@ -179,6 +180,6 @@ public class TelemetryAssessor {
          // todo compute last temperature diff
          ScoringTelemetry st = ScoringTelemetry.build(telemetry,0);
          ScoringTelemetryWrapper wrapper = new ScoringTelemetryWrapper(st);
-         return scoringService.assessTelemetry(wrapper);
+         return anomalyDetectionScoringService.assessTelemetry(wrapper);
      }
 }

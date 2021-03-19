@@ -5,8 +5,9 @@ The main documentation for this project (the what, why, how) is part of the Vacc
 This project uses the following technologies to support consuming refrigerator or freezer IoT units and assess temperature / cold chain violation or / and sensor anomaly detection.
 
 It uses: 
+
 * A Kafka backbone (Strimzi) or Event Streams as part of Cloud Pack for Integration
-* Quarkus 1.11.0
+* Quarkus 1.12.2
 * Microprofile Reactive Messaging
 * Kafka Streams, with KStream and Ktable and Interactive queries
 
@@ -23,6 +24,29 @@ The component interacts with other components as highlighted in the figure below
 * A kKafka user exists with administration role. (See [Event Streams documentation](https://ibm.github.io/event-streams/security/managing-access/#assigning-access-to-applications) for that)
 
 ## Running locally
+
+### Running locally with docker compose
+
+The repository includes a sample `docker-compose.yaml` which you can use to run a single-node Kafka cluster on your local machine.
+
+* To start Kafka locally, run `docker-compose up -d`. This will start Kafka, Zookeeper, the Reefer simulator to test sending telemetries.
+
+We did not mount any folder to persist Kafka topics data, so each time you start this cluster you must create the `telemetries` topic with the command: `./scripts/createTopics.sh`.
+
+You can always validate the list of topics with the command: `./scripts/listTopics.sh`
+
+* Start `./mvnw quarkus:dev` to access the application
+* Use the simulator to send some records for example: 
+
+```shell
+curl -X POST http://localhost:5000/control -d "{\"containerID\": \"C01\",\"nb_of_records\": 20,\"product_id\": \"P01\",\"simulation\": \"tempgrowth\"}"
+```
+
+* Verify alerts are created ` ./scripts/verifyReeferAlertsTopicContent.sh`
+To shut down Kafka and Zookeeper afterwards, run `docker-compose down`.
+
+
+## OLDER To clean
 
 **THIS WAS CHANGED THE LAST THREE DAYS 01/30/21. So not working yet**
 
@@ -84,28 +108,3 @@ The cluster public certificate is required for all external connections and is a
 oc login --token=... --server=https://c...
 mvn clean package  -Dquarkus.kubernetes.deploy=true -DskipTests
 ```
-
-
-## Running locally with docker compose
-
-The project has a simple `docker-compose.yaml` which you can use to run a single-node Kafka cluster on your local machine. To start Kafka locally, run `docker-compose up`. This will start Kafka, Zookeeper, and also create a Docker network on your machine, which you can find the name of by running `docker network list`.
-
-now you can goto http://localhost:8080/ktable/{containerId}
-or http://localhost:8080/ktable to view all ktable
-and see what is in ktable
-
-
-To shut down Kafka and Zookeeper afterwards, run `docker-compose down`.
-
-
-### Running locally with multiple instance
-
-`$ docker-compose -f docker-compose-code.yaml up --scale vaccinemonotoringagent=5`
-
-now you can access your endpoint using
-
-`http://localhost:4000/reefer-tracker/`
-`http://localhost:4000/reefer-tracker/data/{reeferID}`
-`http://localhost:4000/reefer-tracker/meta-data`
-
-you should get request from one of the docker instance running

@@ -9,19 +9,19 @@ import org.eclipse.microprofile.reactive.messaging.Emitter;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.jboss.resteasy.plugins.providers.CompletionStageProvider;
 
-import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferEvent;
+import ibm.gse.eda.vaccine.coldchainagent.infrastructure.ReeferAlert;
 
-public class MockableEmitter implements Emitter<ReeferEvent> {
+public class MockableEmitter implements Emitter<ReeferAlert> {
     Jsonb parser = JsonbBuilder.create();
 
     @Override
-    public CompletionStage<Void> send(ReeferEvent msg) {
+    public CompletionStage<Void> send(ReeferAlert msg) {
         System.out.println(parser.toJson(msg));
         return null;
     }
 
     @Override
-    public <M extends Message<? extends ReeferEvent>> void send(M msg) {
+    public <M extends Message<? extends ReeferAlert>> void send(M msg) {
         // TODO Auto-generated method stub
 
     }

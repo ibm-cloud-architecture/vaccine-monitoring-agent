@@ -37,6 +37,8 @@ public class WMLScoringClient {
     private String username;
     @ConfigProperty(name = "cp4d.api.key",defaultValue = "")
     private String api_key;
+    @ConfigProperty(name= "prediction.enabled",defaultValue = "false")
+    private Boolean wmlEnabled = false;
     public String wml_token;
 
     Jsonb jsonb = JsonbBuilder.create();
@@ -45,21 +47,16 @@ public class WMLScoringClient {
     private SSLContext sslcontext;
 
     public WMLScoringClient() {
-        initSSL();
+        if (wmlEnabled) {
+            initSSL();
+        }
+           
     }
 
     
     private void initSSL() {
         try {
-            if (this.endPointURL == null)
-                this.endPointURL = ConfigProvider.getConfig().getValue("cp4d.auth.url",String.class);
-            if (this.username == null)
-                this.username = ConfigProvider.getConfig().getValue("cp4d.user",String.class);
-            if (this.api_key == null)
-                this.api_key = ConfigProvider.getConfig().getValue("cp4d.api.key",String.class);
-            if (this.predictionURL == null)
-                this.predictionURL = ConfigProvider.getConfig().getValue("anomalydetection.scoring.url",String.class);
-               
+                  
             sslcontext = SSLContext.getInstance("TLS");
             sslcontext.init(null, new TrustManager[]{new X509TrustManager() {
                 public void checkClientTrusted(X509Certificate[] arg0, String arg1) throws CertificateException {}

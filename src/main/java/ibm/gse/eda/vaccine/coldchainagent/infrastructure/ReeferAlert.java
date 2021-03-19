@@ -10,28 +10,28 @@ import ibm.gse.eda.vaccine.coldchainagent.domain.Telemetry;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 @RegisterForReflection
-public class ReeferEvent {
-    private static Logger LOG = Logger.getLogger(ReeferEvent.class);
+public class ReeferAlert {
+    private static Logger LOG = Logger.getLogger(ReeferAlert.class);
     public String containerID;
     public Object record;
     public LocalDateTime timestamp;
     public String type;
 
-    public ReeferEvent(String ContainerID, LocalDateTime localDate, ReeferAggregate v){
+    public ReeferAlert(String ContainerID, LocalDateTime localDate, ReeferAggregate v){
         this.containerID = ContainerID;
         this.timestamp = localDate;
         this.type = "Cold Chain Violated";
         this.record = v;
     }
 
-    public ReeferEvent(String ContainerID, LocalDateTime localDate, Telemetry payload){
+    public ReeferAlert(String ContainerID, LocalDateTime localDate, Telemetry payload){
         this.containerID = ContainerID;
         this.timestamp = localDate;
         this.type = "Container Anomaly Detected";
         this.record = payload;
     }
 
-    public ReeferEvent(String ContainerID, String localDate, Telemetry payload){
+    public ReeferAlert(String ContainerID, String localDate, Telemetry payload){
         this.containerID = ContainerID;
         try {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd H:mm:ss"); 

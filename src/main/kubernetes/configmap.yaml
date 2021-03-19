@@ -8,6 +8,7 @@ data:
   KAFKA_BOOTSTRAP_SERVERS: eda-dev-kafka-bootstrap.eventstreams.svc:9093
   EDA_LOGGING_LEVEL: INFO
   TELEMETRY_TOPIC: reefer.telemetries
+  ALERT_TOPIC: vaccine.reeferAlerts
   REEFER_TOPIC: vaccine.reefers
   PREDICTION_ENABLED: "false"
   TEMPERATURE_THRESHOLD: "-30.0"

@@ -129,8 +129,8 @@ public class TelemetryAssessor {
           LOG.debug(k + " -> " + v);
         })
         .filter((k, v) -> v.hasTooManyViolations()).foreach((k, v) -> {
-                LOG.info("Violated " + v.toString());
-                LOG.info("Send Notification **************->>> or message to reefer topic. ");
+                LOG.info("Violation " + v.toString());
+                LOG.info("Send Notification **************->>> or message to reeferAlert topic. ");
                 reeferEventEmitter.send(new ReeferAlert(k,LocalDateTime.now(),v));
         });
         return builder.build();
